@@ -1,5 +1,7 @@
 """Basit ön muhasebe; mevcut satış ve çek/senet kayıtlarını değiştirmez."""
 import sqlite3
+import re
+import json
 from contextlib import closing
 from decimal import Decimal, InvalidOperation
 
@@ -16,11 +18,16 @@ def hazirla(conn):
         hesap TEXT NOT NULL CHECK(hesap IN ('Kasa', 'Banka')),
         aciklama TEXT NOT NULL, kurus INTEGER NOT NULL CHECK(kurus > 0),
         iptal INTEGER NOT NULL DEFAULT 0 CHECK(iptal IN (0,1)))''')
+    conn.execute('''CREATE TABLE IF NOT EXISTS on_muhasebe_gecmis (
+        id INTEGER PRIMARY KEY, hareket_id INTEGER NOT NULL,
+        eski_kayit TEXT NOT NULL, zaman TEXT DEFAULT CURRENT_TIMESTAMP)''')
     conn.commit()
 
 
 def tutar_coz(text):
     try:
+        if not re.fullmatch(r'(?:[0-9]+|[0-9]{1,3}(?:\.[0-9]{3})+)(?:,[0-9]{1,2})?', text.strip()):
+            raise ValueError
         value = Decimal(text.strip().replace(' ', '').replace('.', '').replace(',', '.'))
         if not value.is_finite() or value <= 0 or value > Decimal('9999999999.99'):
             raise ValueError
@@ -31,13 +38,23 @@ def tutar_coz(text):
         raise ValueError('Pozitif bir TL tutarı yazın. Örnek: 1.250,50') from None
 
 
-def hareket_ekle(conn, tarih, tur, hesap, aciklama, tutar):
+def hareket_ekle(conn, tarih, tur, hesap, aciklama, tutar, kayit_id=None):
     kurus = tutar_coz(tutar)
     if not aciklama.strip():
         raise ValueError('Açıklama boş bırakılamaz.')
+    if not QDate.fromString(tarih, 'yyyy-MM-dd').isValid():
+        raise ValueError('Geçerli bir tarih seçin.')
     with conn:
-        conn.execute('INSERT INTO on_muhasebe(tarih,tur,hesap,aciklama,kurus) VALUES(?,?,?,?,?)',
-                     (tarih, tur, hesap, aciklama.strip(), kurus))
+        values = (tarih, tur, hesap, aciklama.strip(), kurus)
+        if kayit_id is None:
+            conn.execute('INSERT INTO on_muhasebe(tarih,tur,hesap,aciklama,kurus) VALUES(?,?,?,?,?)', values)
+        else:
+            old = conn.execute('SELECT * FROM on_muhasebe WHERE id=? AND iptal=0', (kayit_id,)).fetchone()
+            if old is None:
+                raise ValueError('Kayıt bulunamadı veya iptal edilmiş.')
+            conn.execute('INSERT INTO on_muhasebe_gecmis(hareket_id,eski_kayit) VALUES(?,?)',
+                         (kayit_id,json.dumps(old,ensure_ascii=False)))
+            conn.execute('UPDATE on_muhasebe SET tarih=?,tur=?,hesap=?,aciklama=?,kurus=? WHERE id=?',values+(kayit_id,))
 
 
 def ozet(conn):
@@ -69,6 +86,7 @@ class MuhasebeSayfasi(QWidget):
     def __init__(self, db_path, parent=None):
         super().__init__(parent)
         self.db_path = db_path
+        self.edit_id = None
         with closing(sqlite3.connect(db_path)) as conn:
             hazirla(conn)
         self.setStyleSheet('''
@@ -121,9 +139,12 @@ class MuhasebeSayfasi(QWidget):
         warning = QLabel('Satış tahsilatlarını burada tekrar gelir yazmayın. Açılış: ilk kasa/banka tutarı; gelir sayılmaz.')
         warning.setWordWrap(True); ml.addWidget(warning)
         actions = QHBoxLayout()
-        save = QPushButton('Kaydı ekle'); save.clicked.connect(self.kaydet)
+        self.save = QPushButton('Kaydı ekle'); self.save.clicked.connect(self.kaydet)
+        edit = QPushButton('Seçileni düzenle'); edit.clicked.connect(self.duzenle)
+        reset = QPushButton('Yeni kayıt / Vazgeç'); reset.clicked.connect(self.form_temizle)
         cancel = QPushButton('Seçili kaydı iptal et'); cancel.clicked.connect(self.iptal)
-        actions.addWidget(save); actions.addWidget(cancel); actions.addStretch()
+        actions.addWidget(self.save); actions.addWidget(edit); actions.addWidget(reset)
+        actions.addWidget(cancel); actions.addStretch()
         ml.addLayout(actions)
         self.table = QTableWidget(0,7)
         self.table.setHorizontalHeaderLabels(['No','Tarih','İşlem','Hesap','Açıklama','Tutar','Durum'])
@@ -167,10 +188,27 @@ class MuhasebeSayfasi(QWidget):
         try:
             with closing(sqlite3.connect(self.db_path)) as conn:
                 hareket_ekle(conn,self.tarih.date().toString('yyyy-MM-dd'),self.tur.currentText(),
-                            self.hesap.currentText(),self.aciklama.text(),self.tutar.text())
+                            self.hesap.currentText(),self.aciklama.text(),self.tutar.text(),self.edit_id)
         except (ValueError,sqlite3.Error) as exc:
             QMessageBox.warning(self,'Kayıt eklenemedi',str(exc)); return
-        self.aciklama.clear(); self.tutar.clear(); self.yenile()
+        self.form_temizle(); self.yenile()
+
+    def form_temizle(self):
+        self.edit_id = None
+        self.save.setText('Kaydı ekle')
+        self.aciklama.clear(); self.tutar.clear()
+
+    def duzenle(self):
+        row = self.table.currentRow()
+        if row < 0 or self.table.item(row,6).text() == 'İptal':
+            QMessageBox.information(self,'Kayıt seçin','Önce tablodan aktif bir kayıt seçin.'); return
+        self.edit_id = int(self.table.item(row,0).text())
+        self.tarih.setDate(QDate.fromString(self.table.item(row,1).text(),'yyyy-MM-dd'))
+        self.tur.setCurrentText(self.table.item(row,2).text())
+        self.hesap.setCurrentText(self.table.item(row,3).text())
+        self.aciklama.setText(self.table.item(row,4).text())
+        self.tutar.setText(self.table.item(row,5).text().removesuffix(' TL'))
+        self.save.setText('Değişikliği kaydet')
 
     def iptal(self):
         row = self.table.currentRow()
@@ -180,6 +218,10 @@ class MuhasebeSayfasi(QWidget):
                 QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
                 QMessageBox.StandardButton.No) != QMessageBox.StandardButton.Yes:
             return
-        with closing(sqlite3.connect(self.db_path)) as conn, conn:
-            conn.execute('UPDATE on_muhasebe SET iptal=1 WHERE id=?',(int(self.table.item(row,0).text()),))
+        try:
+            with closing(sqlite3.connect(self.db_path)) as conn, conn:
+                conn.execute('UPDATE on_muhasebe SET iptal=1 WHERE id=?',(int(self.table.item(row,0).text()),))
+        except sqlite3.Error as exc:
+            QMessageBox.warning(self,'İptal edilemedi',str(exc)); return
+        self.form_temizle()
         self.yenile()
