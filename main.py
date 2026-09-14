@@ -49,6 +49,7 @@ if OCR_VAR:
 from PyQt6.QtPrintSupport import QPrinter, QPrintDialog
 from isim_sozlugu import ERKEK_ISIMLERI, SOYISIMLER, ISIM_DUZELTME_HARITASI
 from wp_musteri_esleme import MUSTERISIZ, MusteriEsleyici, wp_ek_borc
+from muhasebe import MuhasebeSayfasi
 
 
 class UcretsizEvrakOkuyucu:
@@ -4108,6 +4109,10 @@ class BenimPOSPlastik(QMainWindow):
                 self.btn_nav_finans = btn
             sidebar_layout.addWidget(btn)
 
+        self.btn_muhasebe = QPushButton("  MUHASEBE")
+        self.btn_muhasebe.setFixedHeight(38)
+        self.btn_muhasebe.setStyleSheet("background: transparent; color: #c0cede; text-align: left; padding-left: 18px; border: none; font-size: 13px;")
+        sidebar_layout.addWidget(self.btn_muhasebe)
         sidebar_layout.addStretch()
         root_layout.addWidget(sidebar)
 
@@ -4148,6 +4153,9 @@ class BenimPOSPlastik(QMainWindow):
         self.page_finance = self.create_finance_page()
         self.stack.addWidget(self.page_finance)
         self.btn_nav_finans.clicked.connect(self.finans_sayfasini_ac)
+        self.page_muhasebe = MuhasebeSayfasi(DB_NAME)
+        self.stack.addWidget(self.page_muhasebe)
+        self.btn_muhasebe.clicked.connect(lambda: self.stack.setCurrentWidget(self.page_muhasebe))
 
     def personel_kartlari_ac(self):
         self.stack.setCurrentWidget(self.page_personnel)
