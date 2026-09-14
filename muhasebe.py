@@ -158,6 +158,8 @@ class MuhasebeSayfasi(QWidget):
         balance = QWidget(); bl = QVBoxLayout(balance)
         self.bilanco = QLabel(); self.bilanco.setWordWrap(True); bl.addWidget(self.bilanco); bl.addStretch()
         self.tabs.addTab(balance,'Varlık–Borç Özeti')
+        from muhasebe_donem import DonemSayfasi
+        self.tabs.addTab(DonemSayfasi(db_path),'Dönem / Stok / Maliyet')
         refresh = QPushButton('Bilgileri yenile'); refresh.clicked.connect(self.yenile); root.addWidget(refresh)
 
     def showEvent(self, event):
