@@ -1154,7 +1154,9 @@ def init_db():
     ):
         if kolon not in musteri_kolonlar:
             c.execute(f"ALTER TABLE customers ADD COLUMN {kolon} {tanim}")
-    if "balance" in musteri_kolonlar:
+    # Eski bakiyeyi yalnızca remaining_debt ilk kez oluşturulurken taşı.
+    # Sonraki açılışlarda kapanmış borcu eski balance ile yeniden açma.
+    if "balance" in musteri_kolonlar and "remaining_debt" not in musteri_kolonlar:
         c.execute("""
             UPDATE customers
             SET remaining_debt = COALESCE(balance, 0)
@@ -2336,54 +2338,16 @@ class WhatsAppSatisAyristirici:
             if t_kelime in saf_isim:
                 return None, "MÜŞTERİSİZ SATIŞ"
 
-        # --- SÜPER AGRESİF KÖK YAKALAYICI ---
-        isim_ust = saf_isim.upper().replace("İ", "I")
+        # Tam müşteri adını koru: ALAATTİN MUSTAFA, KOMŞU RAMAZAN vb.
+        # Bilinen referans adları fiil eki filtresinden önce değerlendirilir.
+        esleyici = MusteriEsleyici(tum_musteriler or [])
+        es = esleyici.coz(saf_isim)
+        if es.kesin:
+            return es.musteri_id, es.musteri_ad
 
-        # MUTASAN KURALI (İçinde mutasan geçen her şeyi tek isme sabitler)
-        if "MUTASAN" in isim_ust:
-            saf_isim = "MUTASAN"
-
-        # Orhan Bahçe Kuralı (atıcakmış vb. ekleri yutar)
-        elif "ORHAN" in isim_ust and "BAH" in isim_ust:
-            saf_isim = "ORHAN BAHÇE"
-
-        # Ramazan Kuralları
-        elif "RAMAZAN" in isim_ust:
-            if "EFOR" in isim_ust:
-                saf_isim = "EFOR PLASTİK RAMAZAN"
-            elif "ELEKT" in isim_ust:
-                saf_isim = "RAMAZAN ELEKTRİKÇİ"
-            elif "IKITELLI" in isim_ust:
-                saf_isim = "İKİTELLİ RAMAZAN"
-            else:
-                saf_isim = "RAMAZAN"
-
-        elif "ALAT" in isim_ust or "ALAAT" in isim_ust or "ALLAT" in isim_ust:
-            saf_isim = "ALAATTİN"
-        elif "BAYP" in isim_ust or "RAYP" in isim_ust:
-            saf_isim = "BAYPEN"
-        elif "CEYH" in isim_ust:
-            saf_isim = "CEYHAN"
-
-        if gecersiz_cari_mi(saf_isim):
-            return None, "MÜŞTERİSİZ SATIŞ"
-
-        try:
-            esleyici = MusteriEsleyici(tum_musteriler or [])
-            es = esleyici.coz(saf_isim)
-            if es.kesin:
-                return es.musteri_id, es.musteri_ad
-        except Exception:
-            pass
-
-        if hasattr(MusteriKumeleyici, 'kanonik_musteri_anahtari'):
-            saf_kok = MusteriKumeleyici.kanonik_musteri_anahtari(saf_isim)
-            for m_id, m_ad in tum_musteriler:
-                m_kok = MusteriKumeleyici.kanonik_musteri_anahtari(m_ad)
-                if saf_kok and m_kok and saf_kok == m_kok:
-                    return m_id, m_ad
-
-        return None, saf_isim
+        # Belirsizliği eski, ilk-eşleşen kök algoritmasıyla aşma.
+        # Kaynak gövde ayrıştırma çıktısında korunur.
+        return None, MUSTERISIZ
 
     @classmethod
     def tek_satir_cift_satis_ayirici(cls, ham_metin):
@@ -2723,25 +2687,27 @@ def kelimeler_benzer_mi(k1, k2):
 
 
 def mevcut_musterilerle_esle(ham_ad, tum_musteriler):
-    """Kesin eşleşmede cari id döner. INCELE'de yeni hesap açmaz."""
-    musteri_siz = MUSTERISIZ
-    ham = str(ham_ad or "").strip() or musteri_siz
-    if ham.upper().replace("İ", "I") in ("MUSTERISIZ SATIS", "MÜŞTERİSİZ SATIŞ"):
-        for row in tum_musteriler:
-            if str(row[1] or "").strip() == musteri_siz:
+    """Yalnızca kesin ve hâlâ var olan müşteri kimliğini döndürür."""
+    kayitlar = list(tum_musteriler or [])
+    ham = str(ham_ad or "").strip()
+    if not ham or turkce_toleransli_metin(ham) in (
+        "musterisiz satis", "genel polimer", "musteri",
+    ):
+        for row in kayitlar:
+            if turkce_toleransli_metin(row[1]) == "musterisiz satis":
                 rem = float(row[2] or 0.0) if len(row) > 2 else 0.0
-                return row[0], musteri_siz, rem
-        return None, musteri_siz, 0.0
-    try:
-        esleyici = MusteriEsleyici(tum_musteriler or [])
-        es = esleyici.coz(ham)
-    except Exception:
-        return None, ham, 0.0
+                return row[0], MUSTERISIZ, rem
+        return None, MUSTERISIZ, 0.0
+
+    # Eşleştirici hatası üst çağrıda görünür ve kayıt transaction'ı geri alınır.
+    # Hata, yeni bir cari oluşturma izni olarak yorumlanmaz.
+    es = MusteriEsleyici(kayitlar).coz(ham)
     if es.kesin:
-        return es.musteri_id, es.musteri_ad, esleyici.devir(es.musteri_id)
-    if es.durum in ("INCELE", "BELIRSIZ", "REFERANS_EKSIK"):
-        return None, musteri_siz, 0.0
-    return None, ham, 0.0
+        for row in kayitlar:
+            if row[0] == es.musteri_id:
+                rem = float(row[2] or 0.0) if len(row) > 2 else 0.0
+                return row[0], es.musteri_ad, rem
+    return None, MUSTERISIZ, 0.0
 
 
 def wp_musteri_borcunu_guncelle(c, m_id, tutar, tahsilat, mevcut_devir_borcu, onceki_wp_toplami=None, satis_mi=True):
@@ -2785,6 +2751,8 @@ def wp_satis_kayit_servisi(c, conn, kayitlar, musteri_map, urun_map, grup_id_bul
     tum_musteriler = list(c.fetchall())
     wp_toplam = {}
     devir_d = {}
+    urun_map_onceki = dict(urun_map)
+    musteri_map_onceki = dict(musteri_map)
     try:
         for d in kayitlar:
             olay = d.get("olay_tipi") or "SATIS"
@@ -2808,29 +2776,27 @@ def wp_satis_kayit_servisi(c, conn, kayitlar, musteri_map, urun_map, grup_id_bul
                 continue
 
             parser_id = d.get("musteri_id")
-            if parser_id:
-                m_id = parser_id
-                m_ad = m_ad_ham
-                c.execute("SELECT remaining_debt FROM customers WHERE id = ?", (m_id,))
+            m_id = None
+            if parser_id is not None:
+                c.execute(
+                    "SELECT id, name, remaining_debt FROM customers WHERE id = ?",
+                    (parser_id,),
+                )
                 row = c.fetchone()
-                mevcut_devir = float(row[0] or 0.0) if row else 0.0
-            else:
-                m_id, m_ad, mevcut_devir = mevcut_musterilerle_esle(m_ad_ham, tum_musteriler)
-            if not m_id:
-                if m_ad and m_ad != MUSTERISIZ and d.get("durum") != "INCELE":
-                    c.execute(
-                        """INSERT INTO customers (name, debt, payment, remaining_debt, shopping_count)
-                           VALUES (?, 0, 0, 0, 0)""",
-                        (m_ad,),
-                    )
-                    m_id = c.lastrowid
-                    mevcut_devir = 0.0
-                    tum_musteriler.append((m_id, m_ad, 0.0))
-                else:
-                    m_id = wp_musterisiz_id_al(c)
-                    m_ad = MUSTERISIZ
-                    mevcut_devir = 0.0
-                    tum_musteriler.append((m_id, m_ad, 0.0))
+                if row:
+                    m_id, m_ad = row[0], row[1]
+                    mevcut_devir = float(row[2] or 0.0)
+            if m_id is None:
+                m_id, m_ad, mevcut_devir = mevcut_musterilerle_esle(
+                    m_ad_ham, tum_musteriler
+                )
+            if m_id is None:
+                m_id = wp_musterisiz_id_al(c)
+                m_ad = MUSTERISIZ
+                c.execute("SELECT remaining_debt FROM customers WHERE id = ?", (m_id,))
+                mevcut_devir = float(c.fetchone()[0] or 0.0)
+                if not any(row[0] == m_id for row in tum_musteriler):
+                    tum_musteriler.append((m_id, m_ad, mevcut_devir))
 
             if m_id not in devir_d:
                 devir_d[m_id] = mevcut_devir
@@ -2877,6 +2843,10 @@ def wp_satis_kayit_servisi(c, conn, kayitlar, musteri_map, urun_map, grup_id_bul
         conn.commit()
     except Exception:
         conn.rollback()
+        urun_map.clear()
+        urun_map.update(urun_map_onceki)
+        musteri_map.clear()
+        musteri_map.update(musteri_map_onceki)
         ozet["hata"] += 1
         raise
     return ozet
@@ -5637,6 +5607,9 @@ class BenimPOSPlastik(QMainWindow):
             if it_per:
                 self.wp_cozumlenen_veriler[row]["personel"] = it_per.text().replace("👤", "").strip()
             if it_m:
+                if col == 3:
+                    # Kullanıcı müşteri adını değiştirdi: eski kimlik artık geçerli değil.
+                    self.wp_cozumlenen_veriler[row]["musteri_id"] = None
                 self.wp_cozumlenen_veriler[row]["musteri_ad"] = buyuk_harf(it_m.text().replace("🏢", "").replace("👤", "").strip())
                 self.wp_cozumlenen_veriler[row]["musteri_tur"] = WhatsAppSatisAyristirici.tur_tespit_et(
                     self.wp_cozumlenen_veriler[row]["musteri_ad"]
@@ -10778,9 +10751,8 @@ if __name__ == "__main__":
     init_db()
     yeni_hammadde_gruplarini_tanimla()
     grupsuzlar_ve_kristal_mantigini_kesin_duzelt()
-    tum_kopuk_satislari_gercek_musteriye_bagla()
-    bosluksuz_ve_birlesik_isimleri_birlestir()
-    fiil_ve_cop_carileri_temizle()
+    # Müşteri birleştirme/silme ve bakiye yeniden hesaplama başlangıç işi değildir.
+    # Eski onarım fonksiyonları yalnızca ayrı denetim ve mutabakat için tutulur.
     kayip_hammadde_kartlarini_kurtar()
     app = QApplication(sys.argv)
     font = app.font()
