@@ -2785,6 +2785,7 @@ def wp_satis_kayit_servisi(c, conn, kayitlar, musteri_map, urun_map, grup_id_bul
     tum_musteriler = list(c.fetchall())
     wp_toplam = {}
     devir_d = {}
+    onceki_urun_map = dict(urun_map)
     try:
         for d in kayitlar:
             olay = d.get("olay_tipi") or "SATIS"
@@ -2877,6 +2878,8 @@ def wp_satis_kayit_servisi(c, conn, kayitlar, musteri_map, urun_map, grup_id_bul
         conn.commit()
     except Exception:
         conn.rollback()
+        urun_map.clear()
+        urun_map.update(onceki_urun_map)
         ozet["hata"] += 1
         raise
     return ozet
