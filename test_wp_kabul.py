@@ -310,8 +310,11 @@ class KayitRollbackTest(unittest.TestCase):
                     raise RuntimeError("kontrollu hata")
                 return 1
 
+            urun_map = {"MEVCUT": (99, 12.0)}
+            onceki_urun_map = dict(urun_map)
             with self.assertRaises(RuntimeError):
-                wp_satis_kayit_servisi(c, conn, kayitlar, {}, {}, gid)
+                wp_satis_kayit_servisi(c, conn, kayitlar, {}, urun_map, gid)
+            self.assertEqual(urun_map, onceki_urun_map)
             c.execute("SELECT COUNT(*) FROM sales_history")
             self.assertEqual(c.fetchone()[0], 0)
             c.execute("SELECT stock_kg FROM products WHERE id=1")

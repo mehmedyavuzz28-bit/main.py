@@ -49,6 +49,7 @@ if OCR_VAR:
 from PyQt6.QtPrintSupport import QPrinter, QPrintDialog
 from isim_sozlugu import ERKEK_ISIMLERI, SOYISIMLER, ISIM_DUZELTME_HARITASI
 from wp_musteri_esleme import MUSTERISIZ, MusteriEsleyici, wp_ek_borc
+from muhasebe import MuhasebeSayfasi
 
 
 class UcretsizEvrakOkuyucu:
@@ -851,8 +852,8 @@ class AkilliSayiKutusu(QDoubleSpinBox):
                 background-color: #e2e8f0;
             }
         """.replace("KENARLIK", kenar.strip())
-           .replace("YUKARI_OK", ok_ikonu("yukari", "#555555"))
-           .replace("ASAGI_OK", ok_ikonu("asagi", "#555555")))
+           .replace("YUKARI_OK", ok_ikonu("yukari", "#c0cede"))
+           .replace("ASAGI_OK", ok_ikonu("asagi", "#c0cede")))
 
     def focusInEvent(self, event):
         super().focusInEvent(event)
@@ -2785,6 +2786,7 @@ def wp_satis_kayit_servisi(c, conn, kayitlar, musteri_map, urun_map, grup_id_bul
     tum_musteriler = list(c.fetchall())
     wp_toplam = {}
     devir_d = {}
+    onceki_urun_map = dict(urun_map)
     try:
         for d in kayitlar:
             olay = d.get("olay_tipi") or "SATIS"
@@ -2877,6 +2879,8 @@ def wp_satis_kayit_servisi(c, conn, kayitlar, musteri_map, urun_map, grup_id_bul
         conn.commit()
     except Exception:
         conn.rollback()
+        urun_map.clear()
+        urun_map.update(onceki_urun_map)
         ozet["hata"] += 1
         raise
     return ozet
@@ -3805,7 +3809,7 @@ class BenimPOSPlastik(QMainWindow):
         super().__init__()
         self.setWindowTitle("BenimPOS - Plastik Geri Dönüşüm Hammadde Yönetimi")
         self.resize(1220, 800)
-        self.setStyleSheet("background-color: #f4f6f9;")
+        self.setStyleSheet("QMainWindow { background-color: #0b101b; } QWidget { color: #edf3fc; }")
 
         # Sayfalama (Pagination) değişkenleri (Her sayfada 10 ürün/grup)
         self.sayfa_boyutu = 10
@@ -3862,7 +3866,7 @@ class BenimPOSPlastik(QMainWindow):
         # ================= 1. SOL MENÜ (AÇILIR ALT MENÜLÜ & BÜYÜK HARFLİ) =================
         sidebar = QFrame()
         sidebar.setFixedWidth(230)
-        sidebar.setStyleSheet("background-color: #ffffff; border-right: 1px solid #dee2e6;")
+        sidebar.setStyleSheet("background-color: #172334; border-right: 1px solid #2c3e55;")
         self._golge_ekle(sidebar, bulaniklik=25, y_offset=0, opaklik=18)
         sidebar_layout = QVBoxLayout(sidebar)
         sidebar_layout.setContentsMargins(0, 0, 0, 15)
@@ -3873,7 +3877,7 @@ class BenimPOSPlastik(QMainWindow):
         brand_banner.setStyleSheet("""
             QFrame {
                 background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
-                    stop:0 #0369a1, stop:1 #0284c7);
+                    stop:0 #0369a1, stop:1 #238ce8);
                 border: none;
             }
         """)
@@ -3903,7 +3907,7 @@ class BenimPOSPlastik(QMainWindow):
         self.btn_nav_sales = QPushButton("  🛒 SATIŞ YAP")
         for b in (btn_home, self.btn_nav_sales):
             b.setFixedHeight(38)
-            b.setStyleSheet("background: transparent; color: #555; text-align: left; padding-left: 18px; border: none; font-size: 13px; font-weight: 500;")
+            b.setStyleSheet("background: transparent; color: #c0cede; text-align: left; padding-left: 18px; border: none; font-size: 13px; font-weight: 500;")
             sidebar_layout.addWidget(b)
 
         # ================= ÜRÜNLER AÇILIR MENÜSÜ =================
@@ -3919,21 +3923,21 @@ class BenimPOSPlastik(QMainWindow):
         self.btn_main_products.setStyleSheet("""
             QPushButton {
                 background-color: transparent;
-                color: #0088cc;
+                color: #4daaff;
                 font-weight: bold;
                 font-size: 13px;
                 text-align: left;
                 padding-left: 18px;
                 border: none;
             }
-            QPushButton:hover { background-color: #f0f7ff; }
+            QPushButton:hover { background-color: #203854; }
         """)
         self.btn_main_products.clicked.connect(self.toggle_products_submenu)
         prod_container_layout.addWidget(self.btn_main_products)
 
         # AÇILIR ALT MENÜ KUTUSU
         self.submenu_products = QFrame()
-        self.submenu_products.setStyleSheet("background-color: #f8fafc; border-left: 3px solid #0088cc;")
+        self.submenu_products.setStyleSheet("background-color: #111b2a; border-left: 3px solid #4daaff;")
         submenu_layout = QVBoxLayout(self.submenu_products)
         submenu_layout.setContentsMargins(0, 4, 0, 4)
         submenu_layout.setSpacing(2)
@@ -3942,7 +3946,7 @@ class BenimPOSPlastik(QMainWindow):
         self.btn_sub_add = QPushButton("– ÜRÜN EKLE VE GÜNCELLE")
         self.btn_sub_add.setFixedHeight(34)
         self.btn_sub_add.setCursor(Qt.CursorShape.PointingHandCursor)
-        self.btn_sub_add.setStyleSheet("background-color: #eef6ff; color: #0088cc; font-weight: bold; text-align: left; padding-left: 20px; border: none; font-size: 11.5px;")
+        self.btn_sub_add.setStyleSheet("background-color: #203854; color: #4daaff; font-weight: bold; text-align: left; padding-left: 20px; border: none; font-size: 11.5px;")
         self.btn_sub_add.clicked.connect(lambda: self.switch_page(0))
         submenu_layout.addWidget(self.btn_sub_add)
 
@@ -3950,7 +3954,7 @@ class BenimPOSPlastik(QMainWindow):
         self.btn_sub_groups = QPushButton("– ÜRÜN GRUBU EKLE")
         self.btn_sub_groups.setFixedHeight(34)
         self.btn_sub_groups.setCursor(Qt.CursorShape.PointingHandCursor)
-        self.btn_sub_groups.setStyleSheet("background-color: transparent; color: #555555; font-weight: bold; text-align: left; padding-left: 20px; border: none; font-size: 11.5px;")
+        self.btn_sub_groups.setStyleSheet("background-color: transparent; color: #c0cede; font-weight: bold; text-align: left; padding-left: 20px; border: none; font-size: 11.5px;")
         self.btn_sub_groups.clicked.connect(lambda: self.switch_page(1))
         submenu_layout.addWidget(self.btn_sub_groups)
 
@@ -3971,7 +3975,7 @@ class BenimPOSPlastik(QMainWindow):
         self.btn_main_customers.setStyleSheet("""
             QPushButton {
                 background-color: transparent;
-                color: #555555;
+                color: #c0cede;
                 font-weight: 500;
                 font-size: 13px;
                 text-align: left;
@@ -3979,8 +3983,8 @@ class BenimPOSPlastik(QMainWindow):
                 border: none;
             }
             QPushButton:hover {
-                background-color: #f0f7ff;
-                color: #0088cc;
+                background-color: #203854;
+                color: #4daaff;
             }
         """)
         self.btn_main_customers.clicked.connect(self.toggle_customers_submenu)
@@ -3988,7 +3992,7 @@ class BenimPOSPlastik(QMainWindow):
 
         # Müşteriler Alt Paneli (– MÜŞTERİLER ve – MÜŞTERİ DETAY)
         self.submenu_customers = QFrame()
-        self.submenu_customers.setStyleSheet("background-color: #f8fafc; border-left: 3px solid #0088cc;")
+        self.submenu_customers.setStyleSheet("background-color: #111b2a; border-left: 3px solid #4daaff;")
         self.submenu_customers.hide()  # Başlangıçta kapalı
         cust_sub_layout = QVBoxLayout(self.submenu_customers)
         cust_sub_layout.setContentsMargins(0, 4, 0, 4)
@@ -4001,7 +4005,7 @@ class BenimPOSPlastik(QMainWindow):
         self.btn_sub_cust_list.setStyleSheet("""
             QPushButton {
                 background-color: transparent;
-                color: #0088cc;
+                color: #4daaff;
                 font-weight: bold;
                 text-align: left;
                 padding-left: 20px;
@@ -4020,14 +4024,14 @@ class BenimPOSPlastik(QMainWindow):
         self.btn_sub_cust_detail.setStyleSheet("""
             QPushButton {
                 background-color: transparent;
-                color: #555555;
+                color: #c0cede;
                 font-weight: bold;
                 text-align: left;
                 padding-left: 20px;
                 border: none;
                 font-size: 12px;
             }
-            QPushButton:hover { background-color: #e2efff; color: #0088cc; }
+            QPushButton:hover { background-color: #e2efff; color: #4daaff; }
         """)
         self.btn_sub_cust_detail.clicked.connect(lambda: self.on_customer_menu_click("DETAIL"))
         cust_sub_layout.addWidget(self.btn_sub_cust_detail)
@@ -4045,15 +4049,15 @@ class BenimPOSPlastik(QMainWindow):
         self.btn_main_reports.setCursor(Qt.CursorShape.PointingHandCursor)
         self.btn_main_reports.setStyleSheet("""
             QPushButton {
-                background-color: transparent; color: #555555; font-weight: 500;
+                background-color: transparent; color: #c0cede; font-weight: 500;
                 font-size: 13px; text-align: left; padding-left: 18px; border: none;
             }
-            QPushButton:hover { background-color: #f0f7ff; color: #0088cc; }
+            QPushButton:hover { background-color: #203854; color: #4daaff; }
         """)
         self.btn_main_reports.clicked.connect(self.toggle_reports_submenu)
         reports_container_layout.addWidget(self.btn_main_reports)
         self.submenu_reports = QFrame()
-        self.submenu_reports.setStyleSheet("background-color: #f8fafc; border-left: 3px solid #0088cc;")
+        self.submenu_reports.setStyleSheet("background-color: #111b2a; border-left: 3px solid #4daaff;")
         self.submenu_reports.hide()
         reports_sub_layout = QVBoxLayout(self.submenu_reports)
         reports_sub_layout.setContentsMargins(0, 4, 0, 4)
@@ -4070,13 +4074,13 @@ class BenimPOSPlastik(QMainWindow):
             btn_r = QPushButton(f"  {etiket}")
             btn_r.setFixedHeight(34)
             btn_r.setCursor(Qt.CursorShape.PointingHandCursor)
-            btn_r.setStyleSheet("background: transparent; color: #555; font-weight: bold; text-align: left; padding-left: 20px; border: none; font-size: 12px;")
+            btn_r.setStyleSheet("background: transparent; color: #c0cede; font-weight: bold; text-align: left; padding-left: 20px; border: none; font-size: 12px;")
             btn_r.clicked.connect(lambda _, i=idx: self.rapor_sayfasini_ac(i))
             reports_sub_layout.addWidget(btn_r)
         self.btn_nav_reports = QPushButton("  – PERSONEL KARTLARI")
         self.btn_nav_reports.setFixedHeight(34)
         self.btn_nav_reports.setCursor(Qt.CursorShape.PointingHandCursor)
-        self.btn_nav_reports.setStyleSheet("background: transparent; color: #555; font-weight: bold; text-align: left; padding-left: 20px; border: none; font-size: 12px;")
+        self.btn_nav_reports.setStyleSheet("background: transparent; color: #c0cede; font-weight: bold; text-align: left; padding-left: 20px; border: none; font-size: 12px;")
         reports_sub_layout.addWidget(self.btn_nav_reports)
         self.btn_rapor_supheli = QPushButton("  – ŞÜPHELİ İŞLEMLER")
         self.btn_rapor_supheli.setFixedHeight(34)
@@ -4086,7 +4090,7 @@ class BenimPOSPlastik(QMainWindow):
                 text-align: left; padding-left: 20px; height: 32px;
                 color: #ef4444; font-weight: bold; border: none; background: transparent; font-size: 12px;
             }
-            QPushButton:hover { background-color: #fee2e2; border-radius: 6px; }
+            QPushButton:hover { background-color: #fee2e2; border-radius: 10px; }
         """)
         self.btn_rapor_supheli.clicked.connect(self.supheli_islemler_sayfasini_ac)
         reports_sub_layout.addWidget(self.btn_rapor_supheli)
@@ -4098,13 +4102,17 @@ class BenimPOSPlastik(QMainWindow):
         for m in extra_menus:
             btn = QPushButton(f"  {m}")
             btn.setFixedHeight(38)
-            btn.setStyleSheet("background: transparent; color: #555; text-align: left; padding-left: 18px; border: none; font-size: 13px; font-weight: 500;")
+            btn.setStyleSheet("background: transparent; color: #c0cede; text-align: left; padding-left: 18px; border: none; font-size: 13px; font-weight: 500;")
             if "WHATSAPP SATIŞ" in m:
                 self.btn_nav_whatsapp = btn
             elif "ÇEK" in m:
                 self.btn_nav_finans = btn
             sidebar_layout.addWidget(btn)
 
+        self.btn_muhasebe = QPushButton("  MUHASEBE")
+        self.btn_muhasebe.setFixedHeight(38)
+        self.btn_muhasebe.setStyleSheet("background: transparent; color: #c0cede; text-align: left; padding-left: 18px; border: none; font-size: 13px;")
+        sidebar_layout.addWidget(self.btn_muhasebe)
         sidebar_layout.addStretch()
         root_layout.addWidget(sidebar)
 
@@ -4145,6 +4153,9 @@ class BenimPOSPlastik(QMainWindow):
         self.page_finance = self.create_finance_page()
         self.stack.addWidget(self.page_finance)
         self.btn_nav_finans.clicked.connect(self.finans_sayfasini_ac)
+        self.page_muhasebe = MuhasebeSayfasi(DB_NAME)
+        self.stack.addWidget(self.page_muhasebe)
+        self.btn_muhasebe.clicked.connect(lambda: self.stack.setCurrentWidget(self.page_muhasebe))
 
     def personel_kartlari_ac(self):
         self.stack.setCurrentWidget(self.page_personnel)
@@ -4209,8 +4220,8 @@ class BenimPOSPlastik(QMainWindow):
 
     def on_customer_menu_click(self, target):
         """Müşteri alt butonlarına tıklandığında vurgu ve sayfa yönlendirmesi"""
-        aktif = "background-color: #e0f2fe; color: #0088cc; font-weight: bold; text-align: left; padding-left: 20px; border: none; font-size: 12px;"
-        pasif = "background-color: transparent; color: #555555; font-weight: bold; text-align: left; padding-left: 20px; border: none; font-size: 12px;"
+        aktif = "background-color: #203854; color: #4daaff; font-weight: bold; text-align: left; padding-left: 20px; border: none; font-size: 12px;"
+        pasif = "background-color: transparent; color: #c0cede; font-weight: bold; text-align: left; padding-left: 20px; border: none; font-size: 12px;"
         if target == "LIST":
             self.btn_sub_cust_list.setStyleSheet(aktif)
             self.btn_sub_cust_detail.setStyleSheet(pasif)
@@ -4242,12 +4253,12 @@ class BenimPOSPlastik(QMainWindow):
         self.cmb_fiyat_tipi = QComboBox()
         self.cmb_fiyat_tipi.addItems(["Fiyat 1", "Fiyat 2"])
         self.cmb_fiyat_tipi.setFixedHeight(38)
-        self.cmb_fiyat_tipi.setStyleSheet("border: 1px solid #cbd5e1; border-radius: 4px; padding: 0 8px; font-weight: bold; background: white;")
+        self.cmb_fiyat_tipi.setStyleSheet("border: 1px solid #3b506a; border-radius: 10px; padding: 0 8px; font-weight: bold; background: #172334;")
         h_search_bar.addWidget(self.cmb_fiyat_tipi)
 
         self.txt_barkod_ara = BuyukHarfKutusu("Ürün barkodunu okutunuz veya çeşit yazınız (örn: beyaz pom)...")
         self.txt_barkod_ara.setFixedHeight(38)
-        self.txt_barkod_ara.setStyleSheet("border: 2px solid #0ea5e9; border-radius: 4px; padding: 0 10px; font-size: 13.5px; font-weight: bold; background: white;")
+        self.txt_barkod_ara.setStyleSheet("border: 2px solid #0ea5e9; border-radius: 10px; padding: 0 10px; font-size: 13.5px; font-weight: bold; background: #172334;")
         self.txt_barkod_ara.textChanged.connect(self.akilli_urun_onerileri_goster)
         self.txt_barkod_ara.returnPressed.connect(self.akilli_arama_sepete_ekle)
         h_search_bar.addWidget(self.txt_barkod_ara)
@@ -4255,21 +4266,21 @@ class BenimPOSPlastik(QMainWindow):
         btn_ara = QPushButton("🔍 Ara")
         btn_ara.setFixedSize(70, 38)
         btn_ara.setCursor(Qt.CursorShape.PointingHandCursor)
-        btn_ara.setStyleSheet("background-color: #0ea5e9; color: white; font-weight: bold; border-radius: 4px; border: none; font-size: 13px;")
+        btn_ara.setStyleSheet("background-color: #0ea5e9; color: white; font-weight: bold; border-radius: 10px; border: none; font-size: 13px;")
         btn_ara.clicked.connect(self.akilli_arama_sepete_ekle)
         h_search_bar.addWidget(btn_ara)
 
         btn_fiyat = QPushButton("Fiyat Gör")
         btn_fiyat.setFixedSize(80, 38)
         btn_fiyat.setCursor(Qt.CursorShape.PointingHandCursor)
-        btn_fiyat.setStyleSheet("background-color: #10b981; color: white; font-weight: bold; border-radius: 4px; border: none; font-size: 13px;")
+        btn_fiyat.setStyleSheet("background-color: #10b981; color: white; font-weight: bold; border-radius: 10px; border: none; font-size: 13px;")
         btn_fiyat.clicked.connect(self.fiyat_gor_popup)
         h_search_bar.addWidget(btn_fiyat)
 
         btn_yazdir = QPushButton("🖨 Yazdır ▾")
         btn_yazdir.setFixedSize(95, 38)
         btn_yazdir.setCursor(Qt.CursorShape.PointingHandCursor)
-        btn_yazdir.setStyleSheet("background-color: #f59e0b; color: white; font-weight: bold; border-radius: 4px; border: none; font-size: 13px;")
+        btn_yazdir.setStyleSheet("background-color: #f59e0b; color: white; font-weight: bold; border-radius: 10px; border: none; font-size: 13px;")
         btn_yazdir.clicked.connect(self.satisi_yazdir_diyalog)
         h_search_bar.addWidget(btn_yazdir)
 
@@ -4280,30 +4291,30 @@ class BenimPOSPlastik(QMainWindow):
         h_totals.setSpacing(8)
 
         v_od = QVBoxLayout()
-        v_od.addWidget(QLabel("Ödenen", styleSheet="color: #64748b; font-size: 11px; font-weight: bold;"))
+        v_od.addWidget(QLabel("Ödenen", styleSheet="color: #97aac1; font-size: 11px; font-weight: bold;"))
         self.txt_odenen_tutar = SadeceSayiKutusu(fiyat_modu=False)
         self.txt_odenen_tutar.setFixedHeight(38)
         self.txt_odenen_tutar.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.txt_odenen_tutar.setStyleSheet("border: 1px solid #cbd5e1; border-radius: 4px; font-size: 20px; font-weight: bold; color: #1e293b; background: white;")
+        self.txt_odenen_tutar.setStyleSheet("border: 1px solid #3b506a; border-radius: 10px; font-size: 20px; font-weight: bold; color: #edf3fc; background: #172334;")
         self.txt_odenen_tutar.textChanged.connect(self.para_ustu_hesapla)
         v_od.addWidget(self.txt_odenen_tutar)
         h_totals.addLayout(v_od)
 
         v_tut = QVBoxLayout()
-        v_tut.addWidget(QLabel("Tutar", styleSheet="color: #64748b; font-size: 11px; font-weight: bold;"))
+        v_tut.addWidget(QLabel("Tutar", styleSheet="color: #97aac1; font-size: 11px; font-weight: bold;"))
         self.lbl_toplam_tutar = QLabel("0.00")
         self.lbl_toplam_tutar.setFixedHeight(38)
         self.lbl_toplam_tutar.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.lbl_toplam_tutar.setStyleSheet("border: 1px solid #cbd5e1; border-radius: 4px; font-size: 22px; font-weight: bold; color: #dc2626; background: white;")
+        self.lbl_toplam_tutar.setStyleSheet("border: 1px solid #3b506a; border-radius: 10px; font-size: 22px; font-weight: bold; color: #dc2626; background: #172334;")
         v_tut.addWidget(self.lbl_toplam_tutar)
         h_totals.addLayout(v_tut)
 
         v_pu = QVBoxLayout()
-        v_pu.addWidget(QLabel("Para Üstü", styleSheet="color: #64748b; font-size: 11px; font-weight: bold;"))
+        v_pu.addWidget(QLabel("Para Üstü", styleSheet="color: #97aac1; font-size: 11px; font-weight: bold;"))
         self.lbl_para_ustu = QLabel("0.00")
         self.lbl_para_ustu.setFixedHeight(38)
         self.lbl_para_ustu.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.lbl_para_ustu.setStyleSheet("border: 1px solid #cbd5e1; border-radius: 4px; font-size: 22px; font-weight: bold; color: #16a34a; background: white;")
+        self.lbl_para_ustu.setStyleSheet("border: 1px solid #3b506a; border-radius: 10px; font-size: 22px; font-weight: bold; color: #16a34a; background: #172334;")
         v_pu.addWidget(self.lbl_para_ustu)
         h_totals.addLayout(v_pu)
 
@@ -4318,7 +4329,7 @@ class BenimPOSPlastik(QMainWindow):
         h_m_bar = QHBoxLayout()
         self.btn_tab_m1 = QPushButton("Müşteri (0.00 ₺)")
         self.btn_tab_m1.setFixedHeight(32)
-        self.btn_tab_m1.setStyleSheet("background-color: #0284c7; color: white; font-weight: bold; border-radius: 4px; border: none; padding: 0 16px;")
+        self.btn_tab_m1.setStyleSheet("background-color: #238ce8; color: white; font-weight: bold; border-radius: 10px; border: none; padding: 0 16px;")
         h_m_bar.addWidget(self.btn_tab_m1)
         h_m_bar.addStretch()
 
@@ -4344,8 +4355,8 @@ class BenimPOSPlastik(QMainWindow):
         self.table_sepet.setColumnWidth(4, 50)
         self.table_sepet.verticalHeader().setVisible(False)
         self.table_sepet.setStyleSheet("""
-            QTableWidget { border: 1px solid #cbd5e1; background: white; font-size: 13.5px; }
-            QHeaderView::section { background: #f8fafc; font-weight: bold; height: 36px; border-bottom: 2px solid #cbd5e1; }
+            QTableWidget { border: 1px solid #3b506a; background: #172334; font-size: 13.5px; }
+            QHeaderView::section { background: #111b2a; font-weight: bold; height: 36px; border-bottom: 2px solid #3b506a; }
         """)
         sol_panel.addWidget(self.table_sepet)
         mid_row.addLayout(sol_panel, stretch=6)
@@ -4356,13 +4367,13 @@ class BenimPOSPlastik(QMainWindow):
         h_cust_bar = QHBoxLayout()
         self.lbl_secili_musteri = QLabel("Müşteri Seçilmedi")
         self.lbl_secili_musteri.setFixedHeight(36)
-        self.lbl_secili_musteri.setStyleSheet("background: #f1f5f9; border: 1px solid #cbd5e1; border-radius: 4px; padding: 0 10px; font-weight: bold; color: #334155;")
+        self.lbl_secili_musteri.setStyleSheet("background: #1b2a3e; border: 1px solid #3b506a; border-radius: 10px; padding: 0 10px; font-weight: bold; color: #d5e1f0;")
         h_cust_bar.addWidget(self.lbl_secili_musteri)
 
         btn_sec = QPushButton("  + Seç  ")
         btn_sec.setFixedHeight(36)
         btn_sec.setCursor(Qt.CursorShape.PointingHandCursor)
-        btn_sec.setStyleSheet("background-color: #0ea5e9; color: white; font-weight: bold; border-radius: 4px; border: none; padding: 0 14px;")
+        btn_sec.setStyleSheet("background-color: #0ea5e9; color: white; font-weight: bold; border-radius: 10px; border: none; padding: 0 14px;")
         btn_sec.clicked.connect(self.popup_musteri_sec_ac)
         h_cust_bar.addWidget(btn_sec)
         sag_panel.addLayout(h_cust_bar)
@@ -4373,7 +4384,7 @@ class BenimPOSPlastik(QMainWindow):
             btn_n = QPushButton(val)
             btn_n.setFixedHeight(30)
             btn_n.setCursor(Qt.CursorShape.PointingHandCursor)
-            btn_n.setStyleSheet("background-color: #f0f9ff; color: #0284c7; border: 1px solid #bae6fd; border-radius: 4px; font-weight: bold; font-size: 11.5px;")
+            btn_n.setStyleSheet("background-color: #f0f9ff; color: #238ce8; border: 1px solid #bae6fd; border-radius: 10px; font-weight: bold; font-size: 11.5px;")
             btn_n.clicked.connect(lambda _, v=val: self.hizli_nakit_ekle(v))
             h_nakit_sayilar.addWidget(btn_n)
         sag_panel.addLayout(h_nakit_sayilar)
@@ -4385,7 +4396,7 @@ class BenimPOSPlastik(QMainWindow):
         self.btn_pay_cash.setFixedHeight(65)
         self.btn_pay_cash.setCursor(Qt.CursorShape.PointingHandCursor)
         self.btn_pay_cash.setStyleSheet("""
-            QPushButton { background-color: #22c55e; color: white; font-size: 13px; font-weight: bold; border-radius: 6px; border: none; }
+            QPushButton { background-color: #22c55e; color: white; font-size: 13px; font-weight: bold; border-radius: 10px; border: none; }
             QPushButton:hover { background-color: #16a34a; }
         """)
         self.btn_pay_cash.clicked.connect(lambda: self.satisi_tamamla("NAKİT"))
@@ -4395,7 +4406,7 @@ class BenimPOSPlastik(QMainWindow):
         self.btn_pay_pos.setFixedHeight(65)
         self.btn_pay_pos.setCursor(Qt.CursorShape.PointingHandCursor)
         self.btn_pay_pos.setStyleSheet("""
-            QPushButton { background-color: #06b6d4; color: white; font-size: 13px; font-weight: bold; border-radius: 6px; border: none; }
+            QPushButton { background-color: #06b6d4; color: white; font-size: 13px; font-weight: bold; border-radius: 10px; border: none; }
             QPushButton:hover { background-color: #0891b2; }
         """)
         self.btn_pay_pos.clicked.connect(lambda: self.satisi_tamamla("POS / KREDİ KARTI"))
@@ -4405,7 +4416,7 @@ class BenimPOSPlastik(QMainWindow):
         self.btn_pay_veresiye.setFixedHeight(65)
         self.btn_pay_veresiye.setCursor(Qt.CursorShape.PointingHandCursor)
         self.btn_pay_veresiye.setStyleSheet("""
-            QPushButton { background-color: #f59e0b; color: white; font-size: 13px; font-weight: bold; border-radius: 6px; border: none; }
+            QPushButton { background-color: #f59e0b; color: white; font-size: 13px; font-weight: bold; border-radius: 10px; border: none; }
             QPushButton:hover { background-color: #d97706; }
         """)
         self.btn_pay_veresiye.clicked.connect(lambda: self.satisi_tamamla("AÇIK HESAP (VERESİYE)"))
@@ -4415,7 +4426,7 @@ class BenimPOSPlastik(QMainWindow):
         self.btn_pay_parcali.setFixedHeight(65)
         self.btn_pay_parcali.setCursor(Qt.CursorShape.PointingHandCursor)
         self.btn_pay_parcali.setStyleSheet("""
-            QPushButton { background-color: #2563eb; color: white; font-size: 13px; font-weight: bold; border-radius: 6px; border: none; }
+            QPushButton { background-color: #2563eb; color: white; font-size: 13px; font-weight: bold; border-radius: 10px; border: none; }
             QPushButton:hover { background-color: #1d4ed8; }
         """)
         self.btn_pay_parcali.clicked.connect(lambda: self.satisi_tamamla("PARÇALI ÖDEME"))
@@ -4425,7 +4436,7 @@ class BenimPOSPlastik(QMainWindow):
         self.btn_pay_diger.setFixedHeight(65)
         self.btn_pay_diger.setCursor(Qt.CursorShape.PointingHandCursor)
         self.btn_pay_diger.setStyleSheet("""
-            QPushButton { background-color: #ef4444; color: white; font-size: 13px; font-weight: bold; border-radius: 6px; border: none; }
+            QPushButton { background-color: #ef4444; color: white; font-size: 13px; font-weight: bold; border-radius: 10px; border: none; }
             QPushButton:hover { background-color: #dc2626; }
         """)
         self.btn_pay_diger.clicked.connect(lambda: self.satisi_tamamla("DİĞER"))
@@ -4442,7 +4453,7 @@ class BenimPOSPlastik(QMainWindow):
                 color: white;
                 font-weight: bold;
                 font-size: 13px;
-                border-radius: 6px;
+                border-radius: 10px;
             }
             QPushButton:hover {
                 background-color: #dc2626;
@@ -4468,7 +4479,7 @@ class BenimPOSPlastik(QMainWindow):
 
         scroll_urunler = QScrollArea()
         scroll_urunler.setWidgetResizable(True)
-        scroll_urunler.setStyleSheet("border: 1px solid #e2e8f0; background: #f8fafc;")
+        scroll_urunler.setStyleSheet("border: 1px solid #2c3e55; background: #111b2a;")
         self.grid_urun_alani = QWidget()
         self.grid_urun_layout = QGridLayout(self.grid_urun_alani)
         self.grid_urun_layout.setSpacing(8)
@@ -4533,14 +4544,14 @@ class BenimPOSPlastik(QMainWindow):
             txt_qty.setFixedHeight(34)
             txt_qty.setStyleSheet("""
                 QLineEdit {
-                    border: 1px solid #cbd5e1;
-                    border-radius: 4px;
+                    border: 1px solid #3b506a;
+                    border-radius: 10px;
                     padding: 0 8px;
                     font-size: 13px;
                     font-weight: bold;
-                    background: white;
+                    background: #172334;
                 }
-                QLineEdit:focus { border: 2px solid #0284c7; }
+                QLineEdit:focus { border: 2px solid #238ce8; }
             """)
             if item["qty"] > 0:
                 txt_qty.setText(f"{int(item['qty']):,}".replace(",", ".") if item["qty"] == int(item["qty"]) else f"{item['qty']:.2f}".replace(".", ","))
@@ -4559,22 +4570,22 @@ class BenimPOSPlastik(QMainWindow):
             cmb_unit.setCurrentText(secili_birim)
             cmb_unit.setStyleSheet("""
                 QComboBox {
-                    border: 1px solid #cbd5e1;
-                    border-radius: 4px;
+                    border: 1px solid #3b506a;
+                    border-radius: 10px;
                     padding: 2px 6px;
                     font-size: 12px;
                     font-weight: bold;
-                    background: #f8fafc;
-                    color: #1e293b;
+                    background: #111b2a;
+                    color: #edf3fc;
                 }
                 QComboBox::drop-down {
                     border: none;
                     width: 18px;
                 }
                 QComboBox QAbstractItemView {
-                    border: 1px solid #cbd5e1;
-                    background-color: #ffffff;
-                    selection-background-color: #e0f2fe;
+                    border: 1px solid #3b506a;
+                    background-color: #172334;
+                    selection-background-color: #203854;
                     selection-color: #0369a1;
                     min-width: 100px;
                     padding: 4px;
@@ -4597,16 +4608,16 @@ class BenimPOSPlastik(QMainWindow):
             txt_price.setAlignment(Qt.AlignmentFlag.AlignRight)
             txt_price.setStyleSheet("""
                 QLineEdit {
-                    border: 1px solid #cbd5e1;
-                    border-radius: 4px;
+                    border: 1px solid #3b506a;
+                    border-radius: 10px;
                     padding: 0 8px;
                     font-size: 13.5px;
                     font-weight: bold;
                     color: #0369a1;
-                    background: #ffffff;
+                    background: #172334;
                 }
                 QLineEdit:focus {
-                    border: 2px solid #0284c7;
+                    border: 2px solid #238ce8;
                     background: #f0f9ff;
                 }
             """)
@@ -4621,7 +4632,7 @@ class BenimPOSPlastik(QMainWindow):
             font_tutar.setPointSize(11)
             font_tutar.setWeight(QFont.Weight.Medium)
             it_tot.setFont(font_tutar)
-            it_tot.setForeground(QColor("#1e293b"))
+            it_tot.setForeground(QColor("#edf3fc"))
             it_tot.setTextAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
             it_tot.setFlags(Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemIsSelectable)
             self.table_sepet.setItem(r_idx, 3, it_tot)
@@ -4635,7 +4646,7 @@ class BenimPOSPlastik(QMainWindow):
                     background-color: transparent;
                     color: #ef4444;
                     border: 1px solid transparent;
-                    border-radius: 6px;
+                    border-radius: 10px;
                     font-size: 16px;
                     padding: 0;
                 }
@@ -4893,7 +4904,7 @@ class BenimPOSPlastik(QMainWindow):
         btn_ana.setFixedHeight(40)
         btn_ana.setMinimumWidth(100)
         btn_ana.setCursor(Qt.CursorShape.PointingHandCursor)
-        btn_ana.setStyleSheet("background-color: #3b82f6; color: white; font-weight: bold; border-radius: 6px; padding: 0 15px;")
+        btn_ana.setStyleSheet("background-color: #3b82f6; color: white; font-weight: bold; border-radius: 10px; padding: 0 15px;")
         btn_ana.clicked.connect(lambda: self.urunleri_kategoriye_gore_filtrele("ANA"))
         izgara.addWidget(btn_ana, 0, 0)
 
@@ -4923,11 +4934,11 @@ class BenimPOSPlastik(QMainWindow):
                 btn_kategori.setCursor(Qt.CursorShape.PointingHandCursor)
                 btn_kategori.setStyleSheet("""
                     QPushButton {
-                        background-color: #f1f5f9; color: #334155;
-                        font-weight: bold; border-radius: 6px;
-                        padding: 0px 15px; border: 1px solid #cbd5e1;
+                        background-color: #1b2a3e; color: #d5e1f0;
+                        font-weight: bold; border-radius: 10px;
+                        padding: 0px 15px; border: 1px solid #3b506a;
                     }
-                    QPushButton:hover { background-color: #e2e8f0; }
+                    QPushButton:hover { background-color: #2c3e55; }
                 """)
                 btn_kategori.clicked.connect(lambda checked, g=grup_ismi: self.urunleri_kategoriye_gore_filtrele(g))
                 izgara.addWidget(btn_kategori, row, col)
@@ -5006,16 +5017,16 @@ class BenimPOSPlastik(QMainWindow):
             btn_prod.setCursor(Qt.CursorShape.PointingHandCursor)
             btn_prod.setStyleSheet("""
                 QPushButton {
-                    background-color: #ffffff;
-                    border: 1px solid #cbd5e1;
-                    border-radius: 6px;
+                    background-color: #172334;
+                    border: 1px solid #3b506a;
+                    border-radius: 10px;
                     font-weight: bold;
                     font-size: 11.5px;
-                    color: #1e293b;
+                    color: #edf3fc;
                     padding: 4px;
                 }
                 QPushButton:hover {
-                    border: 2px solid #0284c7;
+                    border: 2px solid #238ce8;
                     background-color: #f0f9ff;
                 }
             """)
@@ -5157,19 +5168,19 @@ class BenimPOSPlastik(QMainWindow):
 
         top_bar = QHBoxLayout()
         title = QLabel("💬 WHATSAPP SATIŞ AKTARIMI")
-        title.setStyleSheet("font-size: 20px; font-weight: bold; color: #1e293b;")
+        title.setStyleSheet("font-size: 20px; font-weight: bold; color: #edf3fc;")
         top_bar.addWidget(title)
         top_bar.addStretch()
         layout.addLayout(top_bar)
 
         card_giris = QFrame()
-        card_giris.setStyleSheet("background-color: #ffffff; border: 1px solid #cbd5e1; border-radius: 8px;")
+        card_giris.setStyleSheet("background-color: #172334; border: 1px solid #3b506a; border-radius: 10px;")
         l_giris = QVBoxLayout(card_giris)
         l_giris.setContentsMargins(16, 14, 16, 14)
         l_giris.setSpacing(10)
 
         lbl_bilgi = QLabel("WhatsApp grubunuzdaki mesajları kopyalayıp aşağıdaki alana yapıştırın. Sistem müşteri isimlerindeki yazım hatalarını (örn: alu colak -> ALİ ÇOLAK) otomatik düzeltir, ürün ve standart fiyatları eşler.")
-        lbl_bilgi.setStyleSheet("color: #475569; font-size: 13px; font-weight: 500;")
+        lbl_bilgi.setStyleSheet("color: #b2c1d4; font-size: 13px; font-weight: 500;")
         lbl_bilgi.setWordWrap(True)
         l_giris.addWidget(lbl_bilgi)
 
@@ -5178,13 +5189,13 @@ class BenimPOSPlastik(QMainWindow):
         self.txt_wp_mesajlar.setFixedHeight(120)
         self.txt_wp_mesajlar.setStyleSheet("""
             QTextEdit {
-                border: 2px solid #cbd5e1;
-                border-radius: 6px;
+                border: 2px solid #3b506a;
+                border-radius: 10px;
                 padding: 8px;
                 font-size: 13.5px;
-                background: #f8fafc;
+                background: #111b2a;
             }
-            QTextEdit:focus { border-color: #0284c7; background: #ffffff; }
+            QTextEdit:focus { border-color: #238ce8; background: #172334; }
         """)
         l_giris.addWidget(self.txt_wp_mesajlar)
 
@@ -5193,7 +5204,7 @@ class BenimPOSPlastik(QMainWindow):
         btn_ayristir = QPushButton("  ⚡ MESAJLARI ANALİZ ET VE TABLOYA DÖK  ")
         btn_ayristir.setFixedHeight(38)
         btn_ayristir.setCursor(Qt.CursorShape.PointingHandCursor)
-        btn_ayristir.setStyleSheet("background-color: #0284c7; color: white; font-size: 13px; font-weight: bold; border-radius: 5px; border: none; padding: 0 16px;")
+        btn_ayristir.setStyleSheet("background-color: #238ce8; color: white; font-size: 13px; font-weight: bold; border-radius: 10px; border: none; padding: 0 16px;")
         btn_ayristir.clicked.connect(self.wp_mesajlarini_isle)
         h_btn_bar.addWidget(btn_ayristir)
         l_giris.addLayout(h_btn_bar)
@@ -5204,8 +5215,8 @@ class BenimPOSPlastik(QMainWindow):
         card_dev_yukleme.setObjectName("ModernDevKarti")
         card_dev_yukleme.setStyleSheet("""
             QFrame#ModernDevKarti {
-                background-color: #ffffff;
-                border: 1px solid #e2e8f0;
+                background-color: #172334;
+                border: 1px solid #2c3e55;
                 border-radius: 10px;
             }
         """)
@@ -5225,17 +5236,17 @@ class BenimPOSPlastik(QMainWindow):
             font-size: 11px;
             font-weight: 800;
             padding: 2px 8px;
-            border-radius: 4px;
+            border-radius: 10px;
             border: 1px solid #bfdbfe;
         """)
         h_baslik_row.addWidget(lbl_rozet)
 
         lbl_dev_bilgi = QLabel("Arşiv & Toplu Veri İçe Aktarım Merkezi")
-        lbl_dev_bilgi.setStyleSheet("font-size: 13.5px; font-weight: 700; color: #0f172a;")
+        lbl_dev_bilgi.setStyleSheet("font-size: 13.5px; font-weight: 700; color: #edf3fc;")
         h_baslik_row.addWidget(lbl_dev_bilgi)
 
         lbl_alt_aciklama = QLabel("WhatsApp (.txt), Muhasebe (.csv) veya Excel yedeklerini arka planda sıfır donma ile işler.")
-        lbl_alt_aciklama.setStyleSheet("font-size: 12px; color: #64748b; font-weight: 500;")
+        lbl_alt_aciklama.setStyleSheet("font-size: 12px; color: #97aac1; font-weight: 500;")
         h_baslik_row.addWidget(lbl_alt_aciklama)
         h_baslik_row.addStretch()
         l_dev.addLayout(h_baslik_row)
@@ -5250,17 +5261,17 @@ class BenimPOSPlastik(QMainWindow):
         btn_wp_dev_txt.setCursor(Qt.CursorShape.PointingHandCursor)
         btn_wp_dev_txt.setStyleSheet("""
             QPushButton {
-                background-color: #0f172a;
-                color: #ffffff;
+                background-color: #edf3fc;
+                color: #172334;
                 font-size: 13px;
                 font-weight: 600;
-                border-radius: 6px;
+                border-radius: 10px;
                 padding: 0 16px;
-                border: 1px solid #0f172a;
+                border: 1px solid #edf3fc;
             }
             QPushButton:hover {
-                background-color: #1e293b;
-                border-color: #1e293b;
+                background-color: #edf3fc;
+                border-color: #edf3fc;
             }
             QPushButton:pressed {
                 background-color: #020617;
@@ -5275,21 +5286,21 @@ class BenimPOSPlastik(QMainWindow):
         btn_dev_csv.setCursor(Qt.CursorShape.PointingHandCursor)
         btn_dev_csv.setStyleSheet("""
             QPushButton {
-                background-color: #f8fafc;
-                color: #1e293b;
+                background-color: #111b2a;
+                color: #edf3fc;
                 font-size: 13px;
                 font-weight: 600;
-                border-radius: 6px;
+                border-radius: 10px;
                 padding: 0 16px;
-                border: 1px solid #cbd5e1;
+                border: 1px solid #3b506a;
             }
             QPushButton:hover {
-                background-color: #f1f5f9;
+                background-color: #1b2a3e;
                 border-color: #94a3b8;
-                color: #0f172a;
+                color: #edf3fc;
             }
             QPushButton:pressed {
-                background-color: #e2e8f0;
+                background-color: #2c3e55;
             }
         """)
         btn_dev_csv.clicked.connect(self.dev_dosya_sec_ve_baslat)
@@ -5302,11 +5313,11 @@ class BenimPOSPlastik(QMainWindow):
         self.btn_aktarim_durdur.setCursor(Qt.CursorShape.PointingHandCursor)
         self.btn_aktarim_durdur.setStyleSheet("""
             QPushButton {
-                background-color: #ffffff;
+                background-color: #172334;
                 color: #dc2626;
                 font-size: 13px;
                 font-weight: 600;
-                border-radius: 6px;
+                border-radius: 10px;
                 padding: 0 14px;
                 border: 1px solid #fecaca;
             }
@@ -5315,9 +5326,9 @@ class BenimPOSPlastik(QMainWindow):
                 border-color: #f87171;
             }
             QPushButton:disabled {
-                background-color: #f8fafc;
-                color: #cbd5e1;
-                border-color: #f1f5f9;
+                background-color: #111b2a;
+                color: #3b506a;
+                border-color: #1b2a3e;
             }
         """)
         self.btn_aktarim_durdur.clicked.connect(self.dev_aktarimi_durdur)
@@ -5331,7 +5342,7 @@ class BenimPOSPlastik(QMainWindow):
         h_status_bar.setSpacing(12)
 
         self.lbl_dev_canli_durum = QLabel("Aktarım için dosya bekleniyor")
-        self.lbl_dev_canli_durum.setStyleSheet("font-size: 12.5px; font-weight: 600; color: #64748b;")
+        self.lbl_dev_canli_durum.setStyleSheet("font-size: 12.5px; font-weight: 600; color: #97aac1;")
         h_status_bar.addWidget(self.lbl_dev_canli_durum)
 
         self.progress_dev = QProgressBar()
@@ -5341,10 +5352,10 @@ class BenimPOSPlastik(QMainWindow):
             QProgressBar {
                 border: none;
                 border-radius: 3px;
-                background-color: #e2e8f0;
+                background-color: #2c3e55;
             }
             QProgressBar::chunk {
-                background-color: #0284c7;
+                background-color: #238ce8;
                 border-radius: 3px;
             }
         """)
@@ -5355,13 +5366,13 @@ class BenimPOSPlastik(QMainWindow):
         layout.addWidget(card_dev_yukleme)
 
         card_tablo = QFrame()
-        card_tablo.setStyleSheet("background-color: #ffffff; border: 1px solid #cbd5e1; border-radius: 8px;")
+        card_tablo.setStyleSheet("background-color: #172334; border: 1px solid #3b506a; border-radius: 10px;")
         l_tablo = QVBoxLayout(card_tablo)
         l_tablo.setContentsMargins(16, 14, 16, 14)
         l_tablo.setSpacing(10)
 
         lbl_onizleme = QLabel("📋 SATIŞ ÖNİZLEME VE DÜZELTME TABLOSU (Eksik kiloları veya hatalı alanları doğrudan hücreye tıklayarak düzeltebilirsiniz)")
-        lbl_onizleme.setStyleSheet("font-size: 13px; font-weight: bold; color: #0f172a;")
+        lbl_onizleme.setStyleSheet("font-size: 13px; font-weight: bold; color: #edf3fc;")
         l_tablo.addWidget(lbl_onizleme)
 
         self.table_wp_onizleme = QTableWidget()
@@ -5374,8 +5385,8 @@ class BenimPOSPlastik(QMainWindow):
         self.table_wp_onizleme.setColumnWidth(0, 110)
         self.table_wp_onizleme.verticalHeader().setVisible(False)
         self.table_wp_onizleme.setStyleSheet("""
-            QTableWidget { border: 1px solid #e2e8f0; font-size: 13px; background: #ffffff; }
-            QHeaderView::section { background: #f8fafc; font-weight: bold; height: 38px; border-bottom: 2px solid #cbd5e1; }
+            QTableWidget { border: 1px solid #2c3e55; font-size: 13px; background: #172334; }
+            QHeaderView::section { background: #111b2a; font-weight: bold; height: 38px; border-bottom: 2px solid #3b506a; }
             QTableWidget::item { padding: 4px; }
         """)
         self.table_wp_onizleme.cellChanged.connect(self.wp_tablo_hucre_degisti)
@@ -5387,13 +5398,13 @@ class BenimPOSPlastik(QMainWindow):
 
         h_alt_bar = QHBoxLayout()
         self.lbl_wp_durum_ozet = QLabel("Henüz mesaj işlenmedi.")
-        self.lbl_wp_durum_ozet.setStyleSheet("font-weight: bold; color: #475569; font-size: 13px;")
+        self.lbl_wp_durum_ozet.setStyleSheet("font-weight: bold; color: #b2c1d4; font-size: 13px;")
         h_alt_bar.addWidget(self.lbl_wp_durum_ozet)
         h_alt_bar.addStretch()
         self.btn_wp_onayla = QPushButton("  ✓ TÜM SATIŞLARI SİSTEME KAYDET (STOK & BORÇLARA İŞLE)  ")
         self.btn_wp_onayla.setFixedHeight(42)
         self.btn_wp_onayla.setCursor(Qt.CursorShape.PointingHandCursor)
-        self.btn_wp_onayla.setStyleSheet("background-color: #10b981; color: white; font-size: 14px; font-weight: bold; border-radius: 6px; border: none; padding: 0 20px;")
+        self.btn_wp_onayla.setStyleSheet("background-color: #10b981; color: white; font-size: 14px; font-weight: bold; border-radius: 10px; border: none; padding: 0 20px;")
         self.btn_wp_onayla.clicked.connect(self.wp_satislarini_veritabanina_kaydet)
         h_alt_bar.addWidget(self.btn_wp_onayla)
         l_tablo.addLayout(h_alt_bar)
@@ -5552,7 +5563,7 @@ class BenimPOSPlastik(QMainWindow):
 
             it_mus = QTableWidgetItem(str(d.get("musteri_ad", "MÜŞTERİSİZ SATIŞ")))
             it_mus.setFont(QFont("Segoe UI", 10, QFont.Weight.Bold))
-            it_mus.setForeground(QColor("#0f172a"))
+            it_mus.setForeground(QColor("#edf3fc"))
             it_mus.setFlags(Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemIsSelectable | Qt.ItemFlag.ItemIsEditable)
             self.table_wp_onizleme.setItem(r_idx, 3, it_mus)
 
@@ -5566,7 +5577,7 @@ class BenimPOSPlastik(QMainWindow):
             it_q = QTableWidgetItem(miktar_str)
             it_q.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
             it_q.setFont(QFont("Segoe UI", 10, QFont.Weight.Bold))
-            it_q.setForeground(QColor("#dc2626" if miktar == 0 else "#0f172a"))
+            it_q.setForeground(QColor("#dc2626" if miktar == 0 else "#edf3fc"))
             it_q.setFlags(Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemIsSelectable | Qt.ItemFlag.ItemIsEditable)
             self.table_wp_onizleme.setItem(r_idx, 5, it_q)
 
@@ -5691,7 +5702,7 @@ class BenimPOSPlastik(QMainWindow):
                 it_st.setForeground(QColor("#15803d"))
                 it_st.setBackground(QColor("#dcfce7"))
                 if it_q:
-                    it_q.setForeground(QColor("#0f172a"))
+                    it_q.setForeground(QColor("#edf3fc"))
             self.table_wp_onizleme.blockSignals(False)
 
             toplam_kg = sum(float(x.get("miktar", 0.0) or 0.0) for x in self.wp_cozumlenen_veriler)
@@ -5878,7 +5889,7 @@ class BenimPOSPlastik(QMainWindow):
         btn_excel = QPushButton("📊 Excel'e Aktar")
         btn_excel.setFixedHeight(36)
         btn_excel.setCursor(Qt.CursorShape.PointingHandCursor)
-        btn_excel.setStyleSheet("background: #16a34a; color: white; font-weight: bold; padding: 0 14px; border-radius: 6px;")
+        btn_excel.setStyleSheet("background: #16a34a; color: white; font-weight: bold; padding: 0 14px; border-radius: 10px;")
         btn_excel.clicked.connect(self.grafikleri_excelle_aktar)
         ust.addWidget(btn_excel)
         layout.addLayout(ust)
@@ -5955,7 +5966,7 @@ class BenimPOSPlastik(QMainWindow):
         layout = QVBoxLayout(page)
         baslik_layout = QHBoxLayout()
         baslik = QLabel("💼 ÇEK & SENET YÖNETİMİ")
-        baslik.setStyleSheet("font-size: 20px; font-weight: bold; color: #1e293b;")
+        baslik.setStyleSheet("font-size: 20px; font-weight: bold; color: #edf3fc;")
         baslik_layout.addWidget(baslik)
         baslik_layout.addStretch()
         self.cmb_siralama = QComboBox()
@@ -5966,7 +5977,7 @@ class BenimPOSPlastik(QMainWindow):
             "💰 Tutar (Düşükten Yükseğe)",
         ])
         self.cmb_siralama.setFixedHeight(36)
-        self.cmb_siralama.setStyleSheet("background: white; border: 1px solid #cbd5e1; border-radius: 6px; padding: 0 8px; font-weight: bold;")
+        self.cmb_siralama.setStyleSheet("background: #172334; border: 1px solid #3b506a; border-radius: 10px; padding: 0 8px; font-weight: bold;")
         self.cmb_siralama.currentIndexChanged.connect(self.finans_tablosunu_guncelle)
         baslik_layout.addWidget(self.cmb_siralama)
         self.btn_finans_secilen_sil = QPushButton("🗑️ Seçilenleri Sil")
@@ -5974,7 +5985,7 @@ class BenimPOSPlastik(QMainWindow):
         self.btn_finans_secilen_sil.setCursor(Qt.CursorShape.PointingHandCursor)
         self.btn_finans_secilen_sil.setStyleSheet(
             "QPushButton { background-color: #fff7ed; color: #c2410c; font-weight: bold; "
-            "border: 1px solid #fdba74; border-radius: 6px; padding: 0 10px; }"
+            "border: 1px solid #fdba74; border-radius: 10px; padding: 0 10px; }"
         )
         self.btn_finans_secilen_sil.clicked.connect(self.finans_secilenleri_sil)
         baslik_layout.addWidget(self.btn_finans_secilen_sil)
@@ -5983,54 +5994,54 @@ class BenimPOSPlastik(QMainWindow):
         self.btn_finans_tum_sil.setCursor(Qt.CursorShape.PointingHandCursor)
         self.btn_finans_tum_sil.setStyleSheet(
             "QPushButton { background-color: #fef2f2; color: #b91c1c; font-weight: bold; "
-            "border: 1px solid #fecaca; border-radius: 6px; padding: 0 10px; }"
+            "border: 1px solid #fecaca; border-radius: 10px; padding: 0 10px; }"
         )
         self.btn_finans_tum_sil.clicked.connect(self.finans_tumunu_sil)
         baslik_layout.addWidget(self.btn_finans_tum_sil)
         btn_aktar = QPushButton("📊 Excel'e Aktar")
         btn_aktar.setFixedHeight(36)
-        btn_aktar.setStyleSheet("background: #16a34a; color: white; font-weight: bold; padding: 0 12px; border-radius: 6px;")
+        btn_aktar.setStyleSheet("background: #16a34a; color: white; font-weight: bold; padding: 0 12px; border-radius: 10px;")
         btn_aktar.setCursor(Qt.CursorShape.PointingHandCursor)
         btn_aktar.clicked.connect(self.finans_evraklarini_disari_aktar)
         baslik_layout.addWidget(btn_aktar)
         btn_mail_ayar = QPushButton("📧 E-Posta Ayarları")
         btn_mail_ayar.setFixedHeight(36)
-        btn_mail_ayar.setStyleSheet("background: #0284c7; color: white; font-weight: bold; padding: 0 12px; border-radius: 6px;")
+        btn_mail_ayar.setStyleSheet("background: #238ce8; color: white; font-weight: bold; padding: 0 12px; border-radius: 10px;")
         btn_mail_ayar.setCursor(Qt.CursorShape.PointingHandCursor)
         btn_mail_ayar.clicked.connect(self.email_ayarlari_ac)
         baslik_layout.addWidget(btn_mail_ayar)
         btn_ice_aktar = QPushButton("📥 İçe Aktar")
         btn_ice_aktar.setFixedHeight(36)
-        btn_ice_aktar.setStyleSheet("background: #0284c7; color: white; font-weight: bold; padding: 0 12px; border-radius: 6px;")
+        btn_ice_aktar.setStyleSheet("background: #238ce8; color: white; font-weight: bold; padding: 0 12px; border-radius: 10px;")
         btn_ice_aktar.setCursor(Qt.CursorShape.PointingHandCursor)
         btn_ice_aktar.clicked.connect(self.finans_evraklarini_ice_aktar)
         baslik_layout.addWidget(btn_ice_aktar)
         btn_toplu = QPushButton("📁 Toplu Çek Yükle")
         btn_toplu.setFixedHeight(36)
-        btn_toplu.setStyleSheet("background: #8b5cf6; color: white; font-weight: bold; padding: 0 12px; border-radius: 6px;")
+        btn_toplu.setStyleSheet("background: #8b5cf6; color: white; font-weight: bold; padding: 0 12px; border-radius: 10px;")
         btn_toplu.setCursor(Qt.CursorShape.PointingHandCursor)
         btn_toplu.clicked.connect(self.toplu_evrak_yukle)
         baslik_layout.addWidget(btn_toplu)
         btn_yeni = QPushButton("+ Tek Evrak Gir")
         btn_yeni.setFixedHeight(36)
-        btn_yeni.setStyleSheet("background: #0284c7; color: white; font-weight: bold; padding: 0 12px; border-radius: 6px;")
+        btn_yeni.setStyleSheet("background: #238ce8; color: white; font-weight: bold; padding: 0 12px; border-radius: 10px;")
         btn_yeni.setCursor(Qt.CursorShape.PointingHandCursor)
         btn_yeni.clicked.connect(self.yeni_evrak_ekle)
         baslik_layout.addWidget(btn_yeni)
         layout.addLayout(baslik_layout)
         kpi_layout = QHBoxLayout()
-        self.lbl_bekleyen_cek = QLabel("BEKLEYEN ÇEK:<br>0,00 ₺<br><span style='font-size:10px; color:#64748b;'>(SIFIR TÜRK LİRASI)</span>")
-        self.lbl_bekleyen_senet = QLabel("BEKLEYEN SENET:<br>0,00 ₺<br><span style='font-size:10px; color:#64748b;'>(SIFIR TÜRK LİRASI)</span>")
-        self.lbl_yaklasan = QLabel("İLK 30 GÜN TAHSİLAT:<br>0,00 ₺<br><span style='font-size:10px; color:#64748b;'>(SIFIR TÜRK LİRASI)</span>")
+        self.lbl_bekleyen_cek = QLabel("BEKLEYEN ÇEK:<br>0,00 ₺<br><span style='font-size:10px; color:#97aac1;'>(SIFIR TÜRK LİRASI)</span>")
+        self.lbl_bekleyen_senet = QLabel("BEKLEYEN SENET:<br>0,00 ₺<br><span style='font-size:10px; color:#97aac1;'>(SIFIR TÜRK LİRASI)</span>")
+        self.lbl_yaklasan = QLabel("İLK 30 GÜN TAHSİLAT:<br>0,00 ₺<br><span style='font-size:10px; color:#97aac1;'>(SIFIR TÜRK LİRASI)</span>")
         for lbl in (self.lbl_bekleyen_cek, self.lbl_bekleyen_senet, self.lbl_yaklasan):
             lbl.setTextFormat(Qt.TextFormat.RichText)
             lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
-            lbl.setStyleSheet("background: white; border: 1px solid #cbd5e1; border-radius: 8px; padding: 12px; font-weight: bold; font-size: 13px; color: #0f172a;")
+            lbl.setStyleSheet("background: #172334; border: 1px solid #3b506a; border-radius: 10px; padding: 12px; font-weight: bold; font-size: 13px; color: #edf3fc;")
             kpi_layout.addWidget(lbl)
         layout.addLayout(kpi_layout)
 
         lbl_projeksiyon_baslik = QLabel("📅 Gelecek 12 Aylık Tahsilat Projeksiyonu (Önümüzdeki 1 Yıl)")
-        lbl_projeksiyon_baslik.setStyleSheet("font-size: 13px; font-weight: bold; color: #334155; margin-top: 6px;")
+        lbl_projeksiyon_baslik.setStyleSheet("font-size: 13px; font-weight: bold; color: #d5e1f0; margin-top: 6px;")
         layout.addWidget(lbl_projeksiyon_baslik)
 
         self.tbl_aylik_projeksiyon = QTableWidget()
@@ -6041,8 +6052,8 @@ class BenimPOSPlastik(QMainWindow):
         self.tbl_aylik_projeksiyon.verticalHeader().setVisible(False)
         self.tbl_aylik_projeksiyon.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
         self.tbl_aylik_projeksiyon.setStyleSheet(
-            "QTableWidget { background: #f8fafc; border: 1px solid #cbd5e1; font-size: 11px; } "
-            "QHeaderView::section { background: #e2e8f0; font-weight: bold; color: #1e293b; border: none; padding: 4px; }"
+            "QTableWidget { background: #111b2a; border: 1px solid #3b506a; font-size: 11px; } "
+            "QHeaderView::section { background: #2c3e55; font-weight: bold; color: #edf3fc; border: none; padding: 4px; }"
         )
         layout.addWidget(self.tbl_aylik_projeksiyon)
 
@@ -6290,7 +6301,7 @@ class BenimPOSPlastik(QMainWindow):
         else:
             lbl.setText("Yok")
             lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
-            lbl.setStyleSheet("color:#94a3b8; border:1px dashed #cbd5e1;")
+            lbl.setStyleSheet("color:#94a3b8; border:1px dashed #3b506a;")
         return lbl
 
     def _resmi_buyuk_goster(self, resim_yolu):
@@ -6394,7 +6405,7 @@ class BenimPOSPlastik(QMainWindow):
             btn_duzenle = QPushButton("✏️ Düzenle")
             btn_duzenle.setFixedHeight(28)
             btn_duzenle.setCursor(Qt.CursorShape.PointingHandCursor)
-            btn_duzenle.setStyleSheet("background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; border-radius: 4px; font-weight: bold;")
+            btn_duzenle.setStyleSheet("background: #203854; color: #0369a1; border: 1px solid #bae6fd; border-radius: 10px; font-weight: bold;")
             btn_duzenle.clicked.connect(lambda _, _id=eid: self.evrak_duzenle(_id))
             w_widget = QWidget()
             w_lay = QHBoxLayout(w_widget)
@@ -6404,15 +6415,15 @@ class BenimPOSPlastik(QMainWindow):
             self.tbl_finans.setCellWidget(r, 9, w_widget)
         self.lbl_bekleyen_cek.setText(
             f"BEKLEYEN ÇEK:<br>{format_tl(t_cek)}<br>"
-            f"<span style='font-size:9.5px; color:#64748b; font-weight:normal;'>({para_yazisi_olustur(t_cek)})</span>"
+            f"<span style='font-size:9.5px; color:#97aac1; font-weight:normal;'>({para_yazisi_olustur(t_cek)})</span>"
         )
         self.lbl_bekleyen_senet.setText(
             f"BEKLEYEN SENET:<br>{format_tl(t_senet)}<br>"
-            f"<span style='font-size:9.5px; color:#64748b; font-weight:normal;'>({para_yazisi_olustur(t_senet)})</span>"
+            f"<span style='font-size:9.5px; color:#97aac1; font-weight:normal;'>({para_yazisi_olustur(t_senet)})</span>"
         )
         self.lbl_yaklasan.setText(
             f"İLK 30 GÜN TAHSİLAT:<br>{format_tl(bu_ay)}<br>"
-            f"<span style='font-size:9.5px; color:#64748b; font-weight:normal;'>({para_yazisi_olustur(bu_ay)})</span>"
+            f"<span style='font-size:9.5px; color:#97aac1; font-weight:normal;'>({para_yazisi_olustur(bu_ay)})</span>"
         )
         if uyarilar and not getattr(self, "ilk_uyari_yapildi", False) and self.isVisible():
             self.ilk_uyari_yapildi = True
@@ -6532,7 +6543,7 @@ class BenimPOSPlastik(QMainWindow):
         widget.setGraphicsEffect(golge)
         return widget
 
-    def _sayfa_basligi_widget(self, ikon, metin, renk="#0284c7"):
+    def _sayfa_basligi_widget(self, ikon, metin, renk="#238ce8"):
         kutu = QWidget()
         v = QVBoxLayout(kutu)
         v.setContentsMargins(0, 0, 0, 4)
@@ -6545,7 +6556,7 @@ class BenimPOSPlastik(QMainWindow):
         rozet.setStyleSheet(f"background-color: {renk}1a; border-radius: 10px; font-size: 18px;")
         ust.addWidget(rozet)
         baslik = QLabel(metin)
-        baslik.setStyleSheet("font-size: 21px; font-weight: bold; color: #0f172a;")
+        baslik.setStyleSheet("font-size: 21px; font-weight: bold; color: #edf3fc;")
         ust.addWidget(baslik)
         ust.addStretch()
         v.addLayout(ust)
@@ -6559,13 +6570,13 @@ class BenimPOSPlastik(QMainWindow):
         v.addWidget(cizgi)
         return kutu
 
-    def _rapor_ozet_karti(self, baslik, renk="#0284c7"):
+    def _rapor_ozet_karti(self, baslik, renk="#238ce8"):
         kutu = QFrame()
-        kutu.setStyleSheet("background: white; border: 1px solid #e2e8f0; border-radius: 8px;")
+        kutu.setStyleSheet("background: #172334; border: 1px solid #2c3e55; border-radius: 10px;")
         kutu_layout = QVBoxLayout(kutu)
         kutu_layout.setContentsMargins(14, 10, 14, 10)
         lbl_baslik = QLabel(baslik)
-        lbl_baslik.setStyleSheet("color: #64748b; font-size: 12px; font-weight: bold;")
+        lbl_baslik.setStyleSheet("color: #97aac1; font-size: 12px; font-weight: bold;")
         lbl_deger = QLabel("₺ 0.00")
         lbl_deger.setStyleSheet(f"color: {renk}; font-size: 20px; font-weight: bold;")
         kutu_layout.addWidget(lbl_baslik)
@@ -6604,7 +6615,7 @@ class BenimPOSPlastik(QMainWindow):
         page = QWidget()
         layout = QVBoxLayout(page)
         layout.setSpacing(14)
-        layout.addWidget(self._sayfa_basligi_widget("📅", "GÜNLÜK RAPOR", "#0284c7"))
+        layout.addWidget(self._sayfa_basligi_widget("📅", "GÜNLÜK RAPOR", "#238ce8"))
         satir = QHBoxLayout()
         self.dt_gunluk_tarih = QDateEdit(QDate.currentDate())
         self.dt_gunluk_tarih.setCalendarPopup(True)
@@ -6618,7 +6629,7 @@ class BenimPOSPlastik(QMainWindow):
         btn = QPushButton("🔍 Listele")
         btn.setFixedHeight(36)
         btn.setCursor(Qt.CursorShape.PointingHandCursor)
-        btn.setStyleSheet("background-color: #0284c7; color: white; font-weight: bold; border-radius: 5px; padding: 0 16px;")
+        btn.setStyleSheet("background-color: #238ce8; color: white; font-weight: bold; border-radius: 10px; padding: 0 16px;")
         btn.clicked.connect(self.gunluk_rapor_yenile)
         satir.addWidget(btn)
         satir.addStretch()
@@ -6635,7 +6646,7 @@ class BenimPOSPlastik(QMainWindow):
         layout.addLayout(orta_bolum)
         ozet = QHBoxLayout()
         self.kart_gunluk_nakit = self._rapor_ozet_karti("NAKİT", "#16a34a")
-        self.kart_gunluk_pos = self._rapor_ozet_karti("POS", "#0284c7")
+        self.kart_gunluk_pos = self._rapor_ozet_karti("POS", "#238ce8")
         self.kart_gunluk_acik = self._rapor_ozet_karti("AÇIK HESAP", "#dc2626")
         self.kart_gunluk_toplam = self._rapor_ozet_karti("TOPLAM CİRO", "#7c3aed")
         for k in (self.kart_gunluk_nakit, self.kart_gunluk_pos, self.kart_gunluk_acik, self.kart_gunluk_toplam):
@@ -6717,7 +6728,7 @@ class BenimPOSPlastik(QMainWindow):
         btn = QPushButton("🔍 Listele")
         btn.setFixedHeight(36)
         btn.setCursor(Qt.CursorShape.PointingHandCursor)
-        btn.setStyleSheet("background-color: #0284c7; color: white; font-weight: bold; border-radius: 5px; padding: 0 16px;")
+        btn.setStyleSheet("background-color: #238ce8; color: white; font-weight: bold; border-radius: 10px; padding: 0 16px;")
         btn.clicked.connect(self.tarihsel_rapor_yenile)
         satir.addWidget(btn)
         satir.addStretch()
@@ -6828,7 +6839,7 @@ class BenimPOSPlastik(QMainWindow):
         btn = QPushButton("🔍 Listele")
         btn.setFixedHeight(36)
         btn.setCursor(Qt.CursorShape.PointingHandCursor)
-        btn.setStyleSheet("background-color: #0284c7; color: white; font-weight: bold; border-radius: 5px; padding: 0 16px;")
+        btn.setStyleSheet("background-color: #238ce8; color: white; font-weight: bold; border-radius: 10px; padding: 0 16px;")
         btn.clicked.connect(self.urunsel_rapor_yenile)
         satir.addWidget(btn)
         satir.addStretch()
@@ -6903,7 +6914,7 @@ class BenimPOSPlastik(QMainWindow):
         btn = QPushButton("🔍 Listele")
         btn.setFixedHeight(36)
         btn.setCursor(Qt.CursorShape.PointingHandCursor)
-        btn.setStyleSheet("background-color: #0284c7; color: white; font-weight: bold; border-radius: 5px; padding: 0 16px;")
+        btn.setStyleSheet("background-color: #238ce8; color: white; font-weight: bold; border-radius: 10px; padding: 0 16px;")
         btn.clicked.connect(self.grupsal_rapor_yenile)
         satir.addWidget(btn)
         satir.addStretch()
@@ -6956,7 +6967,7 @@ class BenimPOSPlastik(QMainWindow):
         layout.setSpacing(14)
         layout.addWidget(self._sayfa_basligi_widget("📉", "STOK HAREKET RAPORU", "#dc2626"))
         bilgi = QLabel("Bu rapor satış geçmişinden türetilir (her satış = stoktan düşüş).")
-        bilgi.setStyleSheet("color: #64748b; font-size: 12px;")
+        bilgi.setStyleSheet("color: #97aac1; font-size: 12px;")
         layout.addWidget(bilgi)
         satir = QHBoxLayout()
         self.dt_stok_bas = QDateEdit(QDate.currentDate().addMonths(-1))
@@ -6972,7 +6983,7 @@ class BenimPOSPlastik(QMainWindow):
         btn = QPushButton("🔍 Listele")
         btn.setFixedHeight(36)
         btn.setCursor(Qt.CursorShape.PointingHandCursor)
-        btn.setStyleSheet("background-color: #0284c7; color: white; font-weight: bold; border-radius: 5px; padding: 0 16px;")
+        btn.setStyleSheet("background-color: #238ce8; color: white; font-weight: bold; border-radius: 10px; padding: 0 16px;")
         btn.clicked.connect(self.stok_hareket_rapor_yenile)
         satir.addWidget(btn)
         satir.addStretch()
@@ -7021,7 +7032,7 @@ class BenimPOSPlastik(QMainWindow):
         btn = QPushButton("🔍 Listele")
         btn.setFixedHeight(36)
         btn.setCursor(Qt.CursorShape.PointingHandCursor)
-        btn.setStyleSheet("background-color: #0284c7; color: white; font-weight: bold; border-radius: 5px; padding: 0 16px;")
+        btn.setStyleSheet("background-color: #238ce8; color: white; font-weight: bold; border-radius: 10px; padding: 0 16px;")
         btn.clicked.connect(self.personel_hareket_rapor_yenile)
         satir.addWidget(btn)
         satir.addStretch()
@@ -7071,21 +7082,21 @@ class BenimPOSPlastik(QMainWindow):
 
         ust_bar = QHBoxLayout()
         aciklama = QLabel("Hammadde birim fiyatı 250 ₺'den yüksek, tek satırda 35 tonu aşan veya 500.000 ₺ üzeri fahiş kayıtlar:")
-        aciklama.setStyleSheet("color: #64748b; font-size: 13px;")
+        aciklama.setStyleSheet("color: #97aac1; font-size: 13px;")
         ust_bar.addWidget(aciklama)
         ust_bar.addStretch()
 
         btn_yenile = QPushButton("🔄 Listeyi Yenile")
         btn_yenile.setFixedHeight(34)
         btn_yenile.setCursor(Qt.CursorShape.PointingHandCursor)
-        btn_yenile.setStyleSheet("background: #0284c7; color: white; font-weight: bold; border-radius: 6px; padding: 0 14px;")
+        btn_yenile.setStyleSheet("background: #238ce8; color: white; font-weight: bold; border-radius: 10px; padding: 0 14px;")
         btn_yenile.clicked.connect(self.supheli_islemleri_listele)
         ust_bar.addWidget(btn_yenile)
 
         btn_oto_onar = QPushButton("⚡ Hepsini Otomatik Onar (40 ₺ Sabitle)")
         btn_oto_onar.setFixedHeight(34)
         btn_oto_onar.setCursor(Qt.CursorShape.PointingHandCursor)
-        btn_oto_onar.setStyleSheet("background: #16a34a; color: white; font-weight: bold; border-radius: 6px; padding: 0 14px;")
+        btn_oto_onar.setStyleSheet("background: #16a34a; color: white; font-weight: bold; border-radius: 10px; padding: 0 14px;")
         btn_oto_onar.clicked.connect(self.supheli_islemleri_toplu_onar)
         ust_bar.addWidget(btn_oto_onar)
         layout.addLayout(ust_bar)
@@ -7100,10 +7111,10 @@ class BenimPOSPlastik(QMainWindow):
         self.tablo_supheli.horizontalHeader().setSectionResizeMode(7, QHeaderView.ResizeMode.ResizeToContents)
         self.tablo_supheli.setStyleSheet("""
             QTableWidget {
-                background-color: white; border: 1px solid #e2e8f0; border-radius: 8px; gridline-color: #f1f5f9;
+                background-color: #172334; border: 1px solid #2c3e55; border-radius: 10px; gridline-color: #1b2a3e;
             }
             QHeaderView::section {
-                background-color: #f8fafc; font-weight: bold; color: #334155; height: 38px; border: none;
+                background-color: #111b2a; font-weight: bold; color: #d5e1f0; height: 38px; border: none;
             }
         """)
         layout.addWidget(self.tablo_supheli)
@@ -7142,7 +7153,7 @@ class BenimPOSPlastik(QMainWindow):
                 btn_sil = QPushButton("🗑 Sil")
                 btn_sil.setFixedHeight(28)
                 btn_sil.setCursor(Qt.CursorShape.PointingHandCursor)
-                btn_sil.setStyleSheet("background: #fee2e2; color: #dc2626; font-weight: bold; border-radius: 4px; padding: 0 8px;")
+                btn_sil.setStyleSheet("background: #fee2e2; color: #dc2626; font-weight: bold; border-radius: 10px; padding: 0 8px;")
                 btn_sil.clicked.connect(lambda _, id_val=s_id: self.supheli_islemi_sil(id_val))
                 self.tablo_supheli.setCellWidget(row_idx, 7, btn_sil)
         except Exception as e:
@@ -7184,7 +7195,7 @@ class BenimPOSPlastik(QMainWindow):
 
         top_bar = QHBoxLayout()
         title = QLabel("👥 PERSONEL YÖNETİMİ & SATIŞ RAPORLARI")
-        title.setStyleSheet("font-size: 20px; font-weight: bold; color: #1e293b;")
+        title.setStyleSheet("font-size: 20px; font-weight: bold; color: #edf3fc;")
         top_bar.addWidget(title)
         top_bar.addStretch()
 
@@ -7194,11 +7205,11 @@ class BenimPOSPlastik(QMainWindow):
         btn_yeni_personel.setStyleSheet("""
             QPushButton {
                 background-color: #10b981;
-                color: #ffffff;
+                color: #172334;
                 font-size: 13px;
                 font-weight: bold;
                 border: none;
-                border-radius: 5px;
+                border-radius: 10px;
                 padding: 0 16px;
             }
             QPushButton:hover { background-color: #059669; }
@@ -7208,7 +7219,7 @@ class BenimPOSPlastik(QMainWindow):
         layout.addLayout(top_bar)
 
         lbl_ozet = QLabel("📊 PERSONEL LİSTESİ VE PERFORMANS ÖZETİ")
-        lbl_ozet.setStyleSheet("font-size: 13px; font-weight: bold; color: #475569;")
+        lbl_ozet.setStyleSheet("font-size: 13px; font-weight: bold; color: #b2c1d4;")
         layout.addWidget(lbl_ozet)
 
         self.table_personnel_summary = QTableWidget()
@@ -7222,13 +7233,13 @@ class BenimPOSPlastik(QMainWindow):
         self.table_personnel_summary.verticalHeader().setVisible(False)
         self.table_personnel_summary.setFixedHeight(220)
         self.table_personnel_summary.setStyleSheet("""
-            QTableWidget { border: 1px solid #cbd5e1; background: white; font-size: 13px; }
-            QHeaderView::section { background: #f8fafc; font-weight: bold; height: 36px; border-bottom: 2px solid #cbd5e1; }
+            QTableWidget { border: 1px solid #3b506a; background: #172334; font-size: 13px; }
+            QHeaderView::section { background: #111b2a; font-weight: bold; height: 36px; border-bottom: 2px solid #3b506a; }
         """)
         layout.addWidget(self.table_personnel_summary)
 
         lbl_detay = QLabel("📋 PERSONEL DETAYLI SATIŞ VE TAHSİLAT HAREKETLERİ")
-        lbl_detay.setStyleSheet("font-size: 13px; font-weight: bold; color: #475569; margin-top: 10px;")
+        lbl_detay.setStyleSheet("font-size: 13px; font-weight: bold; color: #b2c1d4; margin-top: 10px;")
         layout.addWidget(lbl_detay)
 
         self.table_personnel_details = QTableWidget()
@@ -7239,8 +7250,8 @@ class BenimPOSPlastik(QMainWindow):
         self.table_personnel_details.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
         self.table_personnel_details.verticalHeader().setVisible(False)
         self.table_personnel_details.setStyleSheet("""
-            QTableWidget { border: 1px solid #cbd5e1; background: white; font-size: 13px; }
-            QHeaderView::section { background: #f8fafc; font-weight: bold; height: 36px; border-bottom: 2px solid #cbd5e1; }
+            QTableWidget { border: 1px solid #3b506a; background: #172334; font-size: 13px; }
+            QHeaderView::section { background: #111b2a; font-weight: bold; height: 36px; border-bottom: 2px solid #3b506a; }
         """)
         layout.addWidget(self.table_personnel_details)
         return page
@@ -7304,7 +7315,7 @@ class BenimPOSPlastik(QMainWindow):
             self.table_personnel_summary.setItem(r_idx, 2, it_tel)
             it_kg = QTableWidgetItem(f"{total_kg:,.0f} KG")
             it_kg.setFont(QFont("Segoe UI", 10, QFont.Weight.Bold))
-            it_kg.setForeground(QColor("#0284c7"))
+            it_kg.setForeground(QColor("#238ce8"))
             it_kg.setTextAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
             self.table_personnel_summary.setItem(r_idx, 3, it_kg)
             it_tl = QTableWidgetItem(f"{total_tl:,.2f} ₺")
@@ -7319,12 +7330,12 @@ class BenimPOSPlastik(QMainWindow):
             action_l.setSpacing(6)
             btn_ed = QPushButton("Düzenle")
             btn_ed.setCursor(Qt.CursorShape.PointingHandCursor)
-            btn_ed.setStyleSheet("background: #0ea5e9; color: white; border-radius: 4px; font-size: 11px; font-weight: bold; padding: 3px 8px;")
+            btn_ed.setStyleSheet("background: #0ea5e9; color: white; border-radius: 10px; font-size: 11px; font-weight: bold; padding: 3px 8px;")
             btn_ed.clicked.connect(lambda _, pid=p_id: self.popup_personel_duzenle(pid))
             action_l.addWidget(btn_ed)
             btn_del = QPushButton("Sil")
             btn_del.setCursor(Qt.CursorShape.PointingHandCursor)
-            btn_del.setStyleSheet("background: #ef4444; color: white; border-radius: 4px; font-size: 11px; font-weight: bold; padding: 3px 8px;")
+            btn_del.setStyleSheet("background: #ef4444; color: white; border-radius: 10px; font-size: 11px; font-weight: bold; padding: 3px 8px;")
             btn_del.clicked.connect(lambda _, pid=p_id, pnm=p_name: self.personel_sil_onay(pid, pnm))
             action_l.addWidget(btn_del)
             self.table_personnel_summary.setCellWidget(r_idx, 5, action_w)
@@ -7373,7 +7384,7 @@ class BenimPOSPlastik(QMainWindow):
         self.btn_delete_page.setStyleSheet("""
             QPushButton {
                 background-color: #fff1f2; color: #e11d48; font-size: 12px; font-weight: bold;
-                border: 1px solid #fecdd3; border-radius: 5px; padding: 0 10px;
+                border: 1px solid #fecdd3; border-radius: 10px; padding: 0 10px;
             }
             QPushButton:hover { background-color: #ffe4e6; }
         """)
@@ -7386,7 +7397,7 @@ class BenimPOSPlastik(QMainWindow):
         btn_delete_all.setStyleSheet("""
             QPushButton {
                 background-color: #fee2e2; color: #dc2626; font-size: 12px; font-weight: bold;
-                border: 1px solid #fca5a5; border-radius: 5px; padding: 0 10px;
+                border: 1px solid #fca5a5; border-radius: 10px; padding: 0 10px;
             }
             QPushButton:hover { background-color: #fecaca; }
         """)
@@ -7398,10 +7409,10 @@ class BenimPOSPlastik(QMainWindow):
         btn_export.setCursor(Qt.CursorShape.PointingHandCursor)
         btn_export.setStyleSheet("""
             QPushButton {
-                background-color: #f8fafc; color: #0284c7; font-size: 12px; font-weight: bold;
-                border: 1px solid #bae6fd; border-radius: 5px; padding: 0 12px;
+                background-color: #111b2a; color: #238ce8; font-size: 12px; font-weight: bold;
+                border: 1px solid #bae6fd; border-radius: 10px; padding: 0 12px;
             }
-            QPushButton:hover { background-color: #e0f2fe; }
+            QPushButton:hover { background-color: #203854; }
         """)
         btn_export.clicked.connect(self.excel_musteri_disari_aktar)
         top_bar.addWidget(btn_export)
@@ -7411,8 +7422,8 @@ class BenimPOSPlastik(QMainWindow):
         btn_import.setCursor(Qt.CursorShape.PointingHandCursor)
         btn_import.setStyleSheet("""
             QPushButton {
-                background-color: #f8fafc; color: #059669; font-size: 12px; font-weight: bold;
-                border: 1px solid #a7f3d0; border-radius: 5px; padding: 0 12px;
+                background-color: #111b2a; color: #059669; font-size: 12px; font-weight: bold;
+                border: 1px solid #a7f3d0; border-radius: 10px; padding: 0 12px;
             }
             QPushButton:hover { background-color: #d1fae5; }
         """)
@@ -7425,11 +7436,11 @@ class BenimPOSPlastik(QMainWindow):
         btn_new_cust.setStyleSheet("""
             QPushButton {
                 background-color: #10b981;
-                color: #ffffff;
+                color: #172334;
                 font-size: 14px;
                 font-weight: bold;
                 border: none;
-                border-radius: 6px;
+                border-radius: 10px;
                 padding: 0 18px;
             }
             QPushButton:hover {
@@ -7442,27 +7453,27 @@ class BenimPOSPlastik(QMainWindow):
         layout.addLayout(top_bar)
 
         main_card = QFrame()
-        main_card.setStyleSheet("background-color: #ffffff; border: 1px solid #e2e8f0; border-radius: 6px;")
+        main_card.setStyleSheet("background-color: #172334; border: 1px solid #2c3e55; border-radius: 10px;")
         card_layout = QVBoxLayout(main_card)
         card_layout.setContentsMargins(18, 16, 18, 16)
         card_layout.setSpacing(12)
 
         search_bar = QHBoxLayout()
         lbl_ara = QLabel("ARA:")
-        lbl_ara.setStyleSheet("font-size: 12px; font-weight: bold; color: #475569;")
+        lbl_ara.setStyleSheet("font-size: 12px; font-weight: bold; color: #b2c1d4;")
         search_bar.addWidget(lbl_ara)
 
         self.txt_cust_search = BuyukHarfKutusu("🔍 MÜŞTERİ ADI VEYA TELEFON...")
         self.txt_cust_search.setFixedWidth(280)
         self.txt_cust_search.setFixedHeight(34)
-        self.txt_cust_search.setStyleSheet("background: #ffffff; border: 1px solid #cbd5e1; border-radius: 4px; padding: 0 10px; font-size: 12.5px; font-weight: bold;")
+        self.txt_cust_search.setStyleSheet("background: #172334; border: 1px solid #3b506a; border-radius: 10px; padding: 0 10px; font-size: 12.5px; font-weight: bold;")
         self.txt_cust_search.textChanged.connect(lambda: self.musteri_sayfa_degistir(1))
         search_bar.addWidget(self.txt_cust_search)
 
         search_bar.addStretch()
 
         self.lbl_toplam_musteri_bilgi = QLabel("0 MÜŞTERİ")
-        self.lbl_toplam_musteri_bilgi.setStyleSheet("color: #64748b; font-size: 12px; font-weight: bold;")
+        self.lbl_toplam_musteri_bilgi.setStyleSheet("color: #97aac1; font-size: 12px; font-weight: bold;")
         search_bar.addWidget(self.lbl_toplam_musteri_bilgi)
         card_layout.addLayout(search_bar)
 
@@ -7481,16 +7492,16 @@ class BenimPOSPlastik(QMainWindow):
         self.table_customers.verticalHeader().setVisible(False)
         self.table_customers.verticalHeader().setDefaultSectionSize(44)
         self.table_customers.setStyleSheet("""
-            QTableWidget { border: 1px solid #e2e8f0; font-size: 13px; background-color: #ffffff; }
-            QHeaderView::section { background-color: #f8fafc; color: #334155; font-weight: bold; border: none; border-bottom: 2px solid #e2e8f0; height: 38px; padding-left: 6px; font-size: 12.5px; }
-            QTableWidget::item { border-bottom: 1px solid #f1f5f9; padding: 6px; }
+            QTableWidget { border: 1px solid #2c3e55; font-size: 13px; background-color: #172334; }
+            QHeaderView::section { background-color: #111b2a; color: #d5e1f0; font-weight: bold; border: none; border-bottom: 2px solid #2c3e55; height: 38px; padding-left: 6px; font-size: 12.5px; }
+            QTableWidget::item { border-bottom: 1px solid #1b2a3e; padding: 6px; }
             QTableWidget::item:selected { background-color: #f0f9ff; color: #0369a1; }
         """)
         card_layout.addWidget(self.table_customers)
 
         footer_row = QHBoxLayout()
         self.lbl_musteri_alt_bilgi = QLabel("0 kayıttan 0 ile 0 arasındakiler")
-        self.lbl_musteri_alt_bilgi.setStyleSheet("color: #64748b; font-size: 12px;")
+        self.lbl_musteri_alt_bilgi.setStyleSheet("color: #97aac1; font-size: 12px;")
         footer_row.addWidget(self.lbl_musteri_alt_bilgi)
         footer_row.addStretch()
 
@@ -7579,7 +7590,7 @@ class BenimPOSPlastik(QMainWindow):
                     background: transparent; border: none; color: #0ea5e9;
                     text-align: left; padding: 0 4px;
                 }
-                QPushButton:hover { color: #0284c7; }
+                QPushButton:hover { color: #238ce8; }
             """)
             ad_btn.clicked.connect(lambda _, c_id=cid: self.popup_musteri_duzenle(c_id))
             self.table_customers.setCellWidget(r_idx, 1, ad_btn)
@@ -7904,7 +7915,7 @@ class BenimPOSPlastik(QMainWindow):
         top_bar.setSpacing(10)
 
         lbl_sec = QLabel("Müşteri Seç:")
-        lbl_sec.setStyleSheet("font-size: 13px; font-weight: bold; color: #1e293b;")
+        lbl_sec.setStyleSheet("font-size: 13px; font-weight: bold; color: #edf3fc;")
         top_bar.addWidget(lbl_sec)
 
         # Eski QComboBox yerine yazılabilir ve tahmin motorlu kutuyu koyuyoruz
@@ -7913,21 +7924,21 @@ class BenimPOSPlastik(QMainWindow):
         self.cmb_detay_musteriler.setMinimumWidth(320)
         self.cmb_detay_musteriler.setStyleSheet("""
             QComboBox {
-                border: 1.5px solid #cbd5e1;
-                border-radius: 6px;
+                border: 1.5px solid #3b506a;
+                border-radius: 10px;
                 padding: 0 10px;
                 font-size: 13px;
                 font-weight: 600;
-                background-color: #ffffff;
-                color: #0f172a;
+                background-color: #172334;
+                color: #edf3fc;
             }
             QComboBox:focus {
-                border: 2px solid #0284c7;
+                border: 2px solid #238ce8;
             }
             QComboBox QAbstractItemView {
-                border: 1px solid #cbd5e1;
-                background: #ffffff;
-                selection-background-color: #e0f2fe;
+                border: 1px solid #3b506a;
+                background: #172334;
+                selection-background-color: #203854;
                 selection-color: #0369a1;
                 padding: 4px;
                 max-height: 220px; /* Ekranı boydan boya kaplamasını engeller */
@@ -7939,7 +7950,7 @@ class BenimPOSPlastik(QMainWindow):
         btn_kart = QPushButton("📇 İletişim & Cari Bilgileri")
         btn_kart.setFixedHeight(36)
         btn_kart.setCursor(Qt.CursorShape.PointingHandCursor)
-        btn_kart.setStyleSheet("background: #f0f9ff; color: #0284c7; border: 1px solid #bae6fd; border-radius: 5px; font-weight: bold; padding: 0 12px;")
+        btn_kart.setStyleSheet("background: #f0f9ff; color: #238ce8; border: 1px solid #bae6fd; border-radius: 10px; font-weight: bold; padding: 0 12px;")
         btn_kart.clicked.connect(self.detay_musteri_karti_ac)
         top_bar.addWidget(btn_kart)
 
@@ -7948,14 +7959,14 @@ class BenimPOSPlastik(QMainWindow):
         btn_export = QPushButton("📤 Excel'e Aktar")
         btn_export.setFixedHeight(36)
         btn_export.setCursor(Qt.CursorShape.PointingHandCursor)
-        btn_export.setStyleSheet("background: #ecfdf5; color: #059669; border: 1px solid #a7f3d0; border-radius: 5px; font-weight: bold; padding: 0 14px;")
+        btn_export.setStyleSheet("background: #ecfdf5; color: #059669; border: 1px solid #a7f3d0; border-radius: 10px; font-weight: bold; padding: 0 14px;")
         btn_export.clicked.connect(self.detay_excel_disa_aktar)
         top_bar.addWidget(btn_export)
 
         btn_import = QPushButton("📥 Excel'den Yükle")
         btn_import.setFixedHeight(36)
         btn_import.setCursor(Qt.CursorShape.PointingHandCursor)
-        btn_import.setStyleSheet("background: #f8fafc; color: #475569; border: 1px solid #cbd5e1; border-radius: 5px; font-weight: bold; padding: 0 14px;")
+        btn_import.setStyleSheet("background: #111b2a; color: #b2c1d4; border: 1px solid #3b506a; border-radius: 10px; font-weight: bold; padding: 0 14px;")
         btn_import.clicked.connect(self.detay_excel_ice_aktar)
         top_bar.addWidget(btn_import)
 
@@ -7964,8 +7975,8 @@ class BenimPOSPlastik(QMainWindow):
         h_cards = QHBoxLayout()
         h_cards.setSpacing(10)
 
-        self.lbl_kart_tonaj = self._bilgi_karti_olustur("TOPLAM ALINAN TONAJ", "0 KG", "#0284c7")
-        self.lbl_kart_ciro = self._bilgi_karti_olustur("TOPLAM SATIŞ TUTARI", "0.00 ₺", "#0f172a")
+        self.lbl_kart_tonaj = self._bilgi_karti_olustur("TOPLAM ALINAN TONAJ", "0 KG", "#238ce8")
+        self.lbl_kart_ciro = self._bilgi_karti_olustur("TOPLAM SATIŞ TUTARI", "0.00 ₺", "#edf3fc")
         self.lbl_kart_tahsilat = self._bilgi_karti_olustur("YAPILAN TAHSİLAT", "0.00 ₺", "#16a34a")
         self.lbl_kart_bakiye = self._bilgi_karti_olustur("KALAN NET BORÇ", "0.00 ₺", "#dc2626")
 
@@ -7985,14 +7996,14 @@ class BenimPOSPlastik(QMainWindow):
         self.table_detay_satislar.horizontalHeader().setSectionResizeMode(2, QHeaderView.ResizeMode.ResizeToContents)
         self.table_detay_satislar.verticalHeader().setVisible(False)
         self.table_detay_satislar.setStyleSheet("""
-            QTableWidget { border: 1px solid #cbd5e1; background: white; font-size: 13px; }
-            QHeaderView::section { background: #f8fafc; font-weight: bold; height: 38px; border-bottom: 2px solid #cbd5e1; color: #1e293b; }
+            QTableWidget { border: 1px solid #3b506a; background: #172334; font-size: 13px; }
+            QHeaderView::section { background: #111b2a; font-weight: bold; height: 38px; border-bottom: 2px solid #3b506a; color: #edf3fc; }
         """)
         layout.addWidget(self.table_detay_satislar)
 
         h_page_bar = QHBoxLayout()
         self.lbl_sayfa_bilgisi = QLabel("Kayıt bulunamadı.")
-        self.lbl_sayfa_bilgisi.setStyleSheet("font-size: 12px; font-weight: bold; color: #64748b;")
+        self.lbl_sayfa_bilgisi.setStyleSheet("font-size: 12px; font-weight: bold; color: #97aac1;")
         h_page_bar.addWidget(self.lbl_sayfa_bilgisi)
         h_page_bar.addStretch()
         self.layout_sayfa_butonlari = QHBoxLayout()
@@ -8004,12 +8015,12 @@ class BenimPOSPlastik(QMainWindow):
 
     def _bilgi_karti_olustur(self, baslik, ilk_deger, renk):
         frame = QFrame()
-        frame.setStyleSheet("background: white; border: 1px solid #e2e8f0; border-radius: 6px;")
+        frame.setStyleSheet("background: #172334; border: 1px solid #2c3e55; border-radius: 10px;")
         l = QVBoxLayout(frame)
         l.setContentsMargins(12, 10, 12, 10)
         l.setSpacing(2)
         lbl_t = QLabel(baslik)
-        lbl_t.setStyleSheet("font-size: 11px; font-weight: bold; color: #64748b;")
+        lbl_t.setStyleSheet("font-size: 11px; font-weight: bold; color: #97aac1;")
         lbl_v = QLabel(ilk_deger)
         lbl_v.setStyleSheet(f"font-size: 18px; font-weight: bold; color: {renk};")
         l.addWidget(lbl_t)
@@ -8087,9 +8098,9 @@ class BenimPOSPlastik(QMainWindow):
             btn.setFixedHeight(28)
             btn.setCursor(Qt.CursorShape.PointingHandCursor)
             if s == self.aktif_sayfa:
-                btn.setStyleSheet("background-color: #0284c7; color: white; font-weight: bold; border-radius: 4px; padding: 0 8px;")
+                btn.setStyleSheet("background-color: #238ce8; color: white; font-weight: bold; border-radius: 10px; padding: 0 8px;")
             else:
-                btn.setStyleSheet("background-color: #f1f5f9; color: #334155; border: 1px solid #cbd5e1; border-radius: 4px; padding: 0 8px;")
+                btn.setStyleSheet("background-color: #1b2a3e; color: #d5e1f0; border: 1px solid #3b506a; border-radius: 10px; padding: 0 8px;")
             btn.clicked.connect(lambda _, sayfa_no=s: self.detay_sayfa_degistir(sayfa_no))
             self.layout_sayfa_butonlari.addWidget(btn)
 
@@ -8256,12 +8267,12 @@ class BenimPOSPlastik(QMainWindow):
     def switch_page(self, index):
         self.stack.setCurrentIndex(index)
         if index == 0:
-            self.btn_sub_add.setStyleSheet("background-color: #eef6ff; color: #0088cc; font-weight: bold; text-align: left; padding-left: 20px; border: none; font-size: 11.5px;")
-            self.btn_sub_groups.setStyleSheet("background-color: transparent; color: #555555; font-weight: bold; text-align: left; padding-left: 20px; border: none; font-size: 11.5px;")
+            self.btn_sub_add.setStyleSheet("background-color: #203854; color: #4daaff; font-weight: bold; text-align: left; padding-left: 20px; border: none; font-size: 11.5px;")
+            self.btn_sub_groups.setStyleSheet("background-color: transparent; color: #c0cede; font-weight: bold; text-align: left; padding-left: 20px; border: none; font-size: 11.5px;")
             self.load_products()
         else:
-            self.btn_sub_groups.setStyleSheet("background-color: #eef6ff; color: #0088cc; font-weight: bold; text-align: left; padding-left: 20px; border: none; font-size: 11.5px;")
-            self.btn_sub_add.setStyleSheet("background-color: transparent; color: #555555; font-weight: bold; text-align: left; padding-left: 20px; border: none; font-size: 11.5px;")
+            self.btn_sub_groups.setStyleSheet("background-color: #203854; color: #4daaff; font-weight: bold; text-align: left; padding-left: 20px; border: none; font-size: 11.5px;")
+            self.btn_sub_add.setStyleSheet("background-color: transparent; color: #c0cede; font-weight: bold; text-align: left; padding-left: 20px; border: none; font-size: 11.5px;")
             self.load_groups_page_list()
 
     # ================= SAYFA 1: ÜRÜN LİSTESİ SAYFASI =================
@@ -8274,7 +8285,7 @@ class BenimPOSPlastik(QMainWindow):
         # Üst Başlık ve Aksiyon Butonları Alanı
         header_layout = QHBoxLayout()
         lbl_title = QLabel("ÜRÜN LİSTESİ")
-        lbl_title.setStyleSheet("font-size: 16px; font-weight: bold; color: #1e293b;")
+        lbl_title.setStyleSheet("font-size: 16px; font-weight: bold; color: #edf3fc;")
         header_layout.addWidget(lbl_title)
         header_layout.addStretch()
         # 1. BUTON: TÜM SATIŞLARI SIFIRLAMA BUTONU
@@ -8284,7 +8295,7 @@ class BenimPOSPlastik(QMainWindow):
         btn_tum_satis_sil.setStyleSheet("""
             QPushButton {
                 background-color: #fef2f2; color: #b91c1c; font-size: 12.5px; font-weight: bold;
-                border: 1px solid #fecaca; border-radius: 6px; padding: 0 12px;
+                border: 1px solid #fecaca; border-radius: 10px; padding: 0 12px;
             }
             QPushButton:hover { background-color: #fee2e2; border-color: #ef4444; }
         """)
@@ -8297,7 +8308,7 @@ class BenimPOSPlastik(QMainWindow):
         btn_tum_urun_sil.setStyleSheet("""
             QPushButton {
                 background-color: #fff1f2; color: #be123c; font-size: 12.5px; font-weight: bold;
-                border: 1px solid #fecdd3; border-radius: 6px; padding: 0 12px;
+                border: 1px solid #fecdd3; border-radius: 10px; padding: 0 12px;
             }
             QPushButton:hover { background-color: #ffe4e6; border-color: #f43f5e; }
         """)
@@ -8310,7 +8321,7 @@ class BenimPOSPlastik(QMainWindow):
         btn_yeni_urun.setStyleSheet("""
             QPushButton {
                 background-color: #10b981; color: white; font-size: 12.5px; font-weight: bold;
-                border-radius: 6px; padding: 0 16px; border: none;
+                border-radius: 10px; padding: 0 16px; border: none;
             }
             QPushButton:hover { background-color: #059669; }
         """)
@@ -8320,7 +8331,7 @@ class BenimPOSPlastik(QMainWindow):
 
         # 2. ANA BEYAZ KART (Arama + Tablo)
         main_card = QFrame()
-        main_card.setStyleSheet("background-color: #ffffff; border: 1px solid #e2e8f0; border-radius: 6px;")
+        main_card.setStyleSheet("background-color: #172334; border: 1px solid #2c3e55; border-radius: 10px;")
         card_layout = QVBoxLayout(main_card)
         card_layout.setContentsMargins(18, 16, 18, 16)
         card_layout.setSpacing(12)
@@ -8328,20 +8339,20 @@ class BenimPOSPlastik(QMainWindow):
         # Arama ve Filtre Çubuğu
         search_bar = QHBoxLayout()
         lbl_ara = QLabel("ARA:")
-        lbl_ara.setStyleSheet("font-size: 12px; font-weight: bold; color: #475569;")
+        lbl_ara.setStyleSheet("font-size: 12px; font-weight: bold; color: #b2c1d4;")
         search_bar.addWidget(lbl_ara)
 
         self.search_input = BuyukHarfKutusu("🔍 HAMMADDE ADI İLE ARA...")
         self.search_input.setFixedWidth(280)
         self.search_input.setFixedHeight(34)
-        self.search_input.setStyleSheet("background: #ffffff; border: 1px solid #cbd5e1; border-radius: 4px; padding: 0 10px; font-size: 12.5px; font-weight: bold;")
+        self.search_input.setStyleSheet("background: #172334; border: 1px solid #3b506a; border-radius: 10px; padding: 0 10px; font-size: 12.5px; font-weight: bold;")
         self.search_input.textChanged.connect(lambda: self.urun_sayfa_degistir(1))
         search_bar.addWidget(self.search_input)
 
         search_bar.addStretch()
 
         self.lbl_toplam_urun_bilgi = QLabel("0 ÜRÜN")
-        self.lbl_toplam_urun_bilgi.setStyleSheet("color: #64748b; font-size: 12px; font-weight: bold;")
+        self.lbl_toplam_urun_bilgi.setStyleSheet("color: #97aac1; font-size: 12px; font-weight: bold;")
         search_bar.addWidget(self.lbl_toplam_urun_bilgi)
         card_layout.addLayout(search_bar)
 
@@ -8362,22 +8373,22 @@ class BenimPOSPlastik(QMainWindow):
         self.table.verticalHeader().setDefaultSectionSize(44)  # 34x32 ikonlar sıkışmasın
         self.table.setStyleSheet("""
             QTableWidget {
-                border: 1px solid #e2e8f0;
+                border: 1px solid #2c3e55;
                 font-size: 13px;
-                background-color: #ffffff;
+                background-color: #172334;
             }
             QHeaderView::section {
-                background-color: #f8fafc;
-                color: #334155;
+                background-color: #111b2a;
+                color: #d5e1f0;
                 font-weight: bold;
                 border: none;
-                border-bottom: 2px solid #e2e8f0;
+                border-bottom: 2px solid #2c3e55;
                 height: 38px;
                 padding-left: 6px;
                 font-size: 12.5px;
             }
             QTableWidget::item {
-                border-bottom: 1px solid #f1f5f9;
+                border-bottom: 1px solid #1b2a3e;
                 padding: 6px;
             }
             QTableWidget::item:selected {
@@ -8390,7 +8401,7 @@ class BenimPOSPlastik(QMainWindow):
         # Alt Sayfalama (Pagination)
         footer_row = QHBoxLayout()
         self.lbl_urun_alt_bilgi = QLabel("0 kayıttan 0 ile 0 arasındakiler")
-        self.lbl_urun_alt_bilgi.setStyleSheet("color: #64748b; font-size: 12px;")
+        self.lbl_urun_alt_bilgi.setStyleSheet("color: #97aac1; font-size: 12px;")
         footer_row.addWidget(self.lbl_urun_alt_bilgi)
         footer_row.addStretch()
 
@@ -8420,14 +8431,14 @@ class BenimPOSPlastik(QMainWindow):
         btn_secilenleri_sil = QPushButton("  🗑 SEÇİLENLERİ SİL  ")
         btn_secilenleri_sil.setFixedHeight(40)
         btn_secilenleri_sil.setCursor(Qt.CursorShape.PointingHandCursor)
-        btn_secilenleri_sil.setStyleSheet("background-color:#f97316; color:white; font-weight:bold; border-radius:5px;")
+        btn_secilenleri_sil.setStyleSheet("background-color:#f97316; color:white; font-weight:bold; border-radius: 10px;")
         btn_secilenleri_sil.clicked.connect(self.grup_secilenleri_sil)
         top_bar.addWidget(btn_secilenleri_sil)
 
         btn_hepsini_sil = QPushButton("  🗑 TÜMÜNÜ SİL  ")
         btn_hepsini_sil.setFixedHeight(40)
         btn_hepsini_sil.setCursor(Qt.CursorShape.PointingHandCursor)
-        btn_hepsini_sil.setStyleSheet("background-color:#dc2626; color:white; font-weight:bold; border-radius:5px;")
+        btn_hepsini_sil.setStyleSheet("background-color:#dc2626; color:white; font-weight:bold; border-radius: 10px;")
         btn_hepsini_sil.clicked.connect(self.grup_hepsini_sil)
         top_bar.addWidget(btn_hepsini_sil)
 
@@ -8437,15 +8448,15 @@ class BenimPOSPlastik(QMainWindow):
         btn_new_group.setStyleSheet("""
             QPushButton {
                 background-color: #0ea5e9;
-                color: #ffffff;
+                color: #172334;
                 font-size: 14px;
                 font-weight: bold;
                 border: none;
-                border-radius: 6px;
+                border-radius: 10px;
                 padding: 0 18px;
             }
             QPushButton:hover {
-                background-color: #0284c7;
+                background-color: #238ce8;
             }
         """)
         btn_new_group.clicked.connect(self.popup_yeni_grup_ekle)
@@ -8454,7 +8465,7 @@ class BenimPOSPlastik(QMainWindow):
 
         # 2. Beyaz Ana Kart
         main_card = QFrame()
-        main_card.setStyleSheet("background-color: #ffffff; border: 1px solid #e2e8f0; border-radius: 6px;")
+        main_card.setStyleSheet("background-color: #172334; border: 1px solid #2c3e55; border-radius: 10px;")
         card_layout = QVBoxLayout(main_card)
         card_layout.setContentsMargins(20, 18, 20, 18)
         card_layout.setSpacing(14)
@@ -8463,37 +8474,37 @@ class BenimPOSPlastik(QMainWindow):
         pill_row = QHBoxLayout()
         self.btn_pill_all = QPushButton("  TÜMÜ  ")
         self.btn_pill_all.setFixedHeight(32)
-        self.btn_pill_all.setStyleSheet("background-color: #0284c7; color: white; font-weight: bold; font-size: 11.5px; border-radius: 16px; padding: 0 14px; border: none;")
+        self.btn_pill_all.setStyleSheet("background-color: #238ce8; color: white; font-weight: bold; font-size: 11.5px; border-radius: 16px; padding: 0 14px; border: none;")
         self.btn_pill_all.clicked.connect(lambda: self.filtrele_gruplar("TUMU"))
         pill_row.addWidget(self.btn_pill_all)
 
         self.btn_pill_empty = QPushButton("  ÜRÜNÜ OLMAYANLAR  ")
         self.btn_pill_empty.setFixedHeight(32)
-        self.btn_pill_empty.setStyleSheet("background-color: #f1f5f9; color: #475569; font-weight: bold; font-size: 11.5px; border-radius: 16px; padding: 0 14px; border: 1px solid #cbd5e1;")
+        self.btn_pill_empty.setStyleSheet("background-color: #1b2a3e; color: #b2c1d4; font-weight: bold; font-size: 11.5px; border-radius: 16px; padding: 0 14px; border: 1px solid #3b506a;")
         self.btn_pill_empty.clicked.connect(lambda: self.filtrele_gruplar("BOS"))
         pill_row.addWidget(self.btn_pill_empty)
 
         pill_row.addStretch()
         self.lbl_toplam_grup_sayisi = QLabel("0 GRUP")
-        self.lbl_toplam_grup_sayisi.setStyleSheet("color: #64748b; font-size: 12px; font-weight: bold;")
+        self.lbl_toplam_grup_sayisi.setStyleSheet("color: #97aac1; font-size: 12px; font-weight: bold;")
         pill_row.addWidget(self.lbl_toplam_grup_sayisi)
         card_layout.addLayout(pill_row)
 
         # Arama Satırı
         search_row = QHBoxLayout()
         lbl_show = QLabel("10 KAYIT GÖSTER")
-        lbl_show.setStyleSheet("color: #64748b; font-size: 12px; font-weight: bold;")
+        lbl_show.setStyleSheet("color: #97aac1; font-size: 12px; font-weight: bold;")
         search_row.addWidget(lbl_show)
         search_row.addStretch()
 
         lbl_ara = QLabel("ARA:")
-        lbl_ara.setStyleSheet("color: #475569; font-size: 12px; font-weight: bold;")
+        lbl_ara.setStyleSheet("color: #b2c1d4; font-size: 12px; font-weight: bold;")
         search_row.addWidget(lbl_ara)
 
         self.txt_group_search = BuyukHarfKutusu("GRUP ADI ARA...")
         self.txt_group_search.setFixedWidth(200)
         self.txt_group_search.setFixedHeight(32)
-        self.txt_group_search.setStyleSheet("border: 1px solid #cbd5e1; border-radius: 4px; padding: 0 8px; font-size: 12px;")
+        self.txt_group_search.setStyleSheet("border: 1px solid #3b506a; border-radius: 10px; padding: 0 8px; font-size: 12px;")
         self.txt_group_search.textChanged.connect(lambda: self.grup_sayfa_degistir(1))
         search_row.addWidget(self.txt_group_search)
         card_layout.addLayout(search_row)
@@ -8514,9 +8525,9 @@ class BenimPOSPlastik(QMainWindow):
         self.table_groups.verticalHeader().setVisible(False)
         self.table_groups.verticalHeader().setDefaultSectionSize(44)
         self.table_groups.setStyleSheet("""
-            QTableWidget { border: 1px solid #e2e8f0; font-size: 13px; background-color: #ffffff; }
-            QHeaderView::section { background-color: #f8fafc; color: #334155; font-weight: bold; border: none; border-bottom: 2px solid #e2e8f0; height: 38px; padding-left: 8px; }
-            QTableWidget::item { border-bottom: 1px solid #f1f5f9; padding: 6px; }
+            QTableWidget { border: 1px solid #2c3e55; font-size: 13px; background-color: #172334; }
+            QHeaderView::section { background-color: #111b2a; color: #d5e1f0; font-weight: bold; border: none; border-bottom: 2px solid #2c3e55; height: 38px; padding-left: 8px; }
+            QTableWidget::item { border-bottom: 1px solid #1b2a3e; padding: 6px; }
             QTableWidget::item:selected { background-color: #f0f9ff; color: #0369a1; }
         """)
         self.table_groups.itemChanged.connect(self._grup_checkbox_degisti)
@@ -8525,7 +8536,7 @@ class BenimPOSPlastik(QMainWindow):
         # Alt Bilgi ve 10'ar Sayfalama
         footer_row = QHBoxLayout()
         self.lbl_grup_alt_bilgi = QLabel("0 kayıttan 0 ile 0 arasındakiler")
-        self.lbl_grup_alt_bilgi.setStyleSheet("color: #64748b; font-size: 12px;")
+        self.lbl_grup_alt_bilgi.setStyleSheet("color: #97aac1; font-size: 12px;")
         footer_row.addWidget(self.lbl_grup_alt_bilgi)
         footer_row.addStretch()
 
@@ -8539,8 +8550,8 @@ class BenimPOSPlastik(QMainWindow):
 
     def filtrele_gruplar(self, tur):
         self.grup_aktif_sayfa = 1
-        aktif = "background-color: #0284c7; color: white; font-weight: bold; font-size: 11.5px; border-radius: 16px; padding: 0 14px; border: none;"
-        pasif = "background-color: #f1f5f9; color: #475569; font-weight: bold; font-size: 11.5px; border-radius: 16px; padding: 0 14px; border: 1px solid #cbd5e1;"
+        aktif = "background-color: #238ce8; color: white; font-weight: bold; font-size: 11.5px; border-radius: 16px; padding: 0 14px; border: none;"
+        pasif = "background-color: #1b2a3e; color: #b2c1d4; font-weight: bold; font-size: 11.5px; border-radius: 16px; padding: 0 14px; border: 1px solid #3b506a;"
         if tur == "TUMU":
             self.grup_filtre_modu = "TUMU"
             self.btn_pill_all.setStyleSheet(aktif)
@@ -8630,8 +8641,8 @@ class BenimPOSPlastik(QMainWindow):
             btn_incele.setFixedHeight(28)
             btn_incele.setCursor(Qt.CursorShape.PointingHandCursor)
             btn_incele.setStyleSheet("""
-                QPushButton { background-color: #0ea5e9; color: white; border-radius: 4px; padding: 0 10px; font-weight: bold;}
-                QPushButton:hover { background-color: #0284c7; }
+                QPushButton { background-color: #0ea5e9; color: white; border-radius: 10px; padding: 0 10px; font-weight: bold;}
+                QPushButton:hover { background-color: #238ce8; }
             """)
             btn_incele.clicked.connect(lambda _, g=g_name: self.grup_icerigini_goster(g))
             a_layout.addWidget(btn_incele)
@@ -8724,7 +8735,7 @@ class BenimPOSPlastik(QMainWindow):
         mevcut_grup = (aktif_sayfa - 1) // grup_araligi
         baslangic_sayfa = mevcut_grup * grup_araligi + 1
         bitis_sayfa = min(baslangic_sayfa + grup_araligi - 1, toplam_sayfa)
-        nav_stil = "border: 1px solid #cbd5e1; background: white; color: #475569; font-size: 11px; font-weight: bold; padding: 0 8px; border-radius: 4px;"
+        nav_stil = "border: 1px solid #3b506a; background: #172334; color: #b2c1d4; font-size: 11px; font-weight: bold; padding: 0 8px; border-radius: 10px;"
 
         if baslangic_sayfa > 1:
             btn_first = QPushButton("« İlk")
@@ -8737,7 +8748,7 @@ class BenimPOSPlastik(QMainWindow):
         btn_prev = QPushButton("ÖNCEKİ")
         btn_prev.setFixedHeight(30)
         btn_prev.setEnabled(aktif_sayfa > 1)
-        btn_prev.setStyleSheet("border: 1px solid #cbd5e1; background: white; color: #475569; font-size: 11px; font-weight: bold; padding: 0 10px; border-radius: 4px;")
+        btn_prev.setStyleSheet("border: 1px solid #3b506a; background: #172334; color: #b2c1d4; font-size: 11px; font-weight: bold; padding: 0 10px; border-radius: 10px;")
         btn_prev.clicked.connect(lambda: degistir_fn(aktif_sayfa - 1))
         kutu.addWidget(btn_prev)
 
@@ -8746,16 +8757,16 @@ class BenimPOSPlastik(QMainWindow):
             btn_page.setFixedSize(32, 30)
             btn_page.setCursor(Qt.CursorShape.PointingHandCursor)
             if s == aktif_sayfa:
-                btn_page.setStyleSheet("border: none; background: #0284c7; color: white; font-size: 12px; font-weight: bold; border-radius: 4px;")
+                btn_page.setStyleSheet("border: none; background: #238ce8; color: white; font-size: 12px; font-weight: bold; border-radius: 10px;")
             else:
-                btn_page.setStyleSheet("border: 1px solid #cbd5e1; background: white; color: #475569; font-size: 12px; font-weight: bold; border-radius: 4px;")
+                btn_page.setStyleSheet("border: 1px solid #3b506a; background: #172334; color: #b2c1d4; font-size: 12px; font-weight: bold; border-radius: 10px;")
             btn_page.clicked.connect(lambda _, p=s: degistir_fn(p))
             kutu.addWidget(btn_page)
 
         btn_next = QPushButton("SONRAKİ")
         btn_next.setFixedHeight(30)
         btn_next.setEnabled(aktif_sayfa < toplam_sayfa)
-        btn_next.setStyleSheet("border: 1px solid #cbd5e1; background: white; color: #475569; font-size: 11px; font-weight: bold; padding: 0 10px; border-radius: 4px;")
+        btn_next.setStyleSheet("border: 1px solid #3b506a; background: #172334; color: #b2c1d4; font-size: 11px; font-weight: bold; padding: 0 10px; border-radius: 10px;")
         btn_next.clicked.connect(lambda: degistir_fn(aktif_sayfa + 1))
         kutu.addWidget(btn_next)
 
@@ -8770,17 +8781,17 @@ class BenimPOSPlastik(QMainWindow):
     def _islem_butonu(self, simge, tooltip, renk, tiklama):
         stiller = {
             "mavi": (
-                "background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 4px;"
-                " color: #0284c7; font-size: 15px; font-weight: bold; padding: 0;",
-                "background: #e0f2fe;",
+                "background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 10px;"
+                " color: #238ce8; font-size: 15px; font-weight: bold; padding: 0;",
+                "background: #203854;",
             ),
             "kirmizi": (
-                "background: #fef2f2; border: 1px solid #fecaca; border-radius: 4px;"
+                "background: #fef2f2; border: 1px solid #fecaca; border-radius: 10px;"
                 " color: #dc2626; font-size: 15px; font-weight: bold; padding: 0;",
                 "background: #fee2e2;",
             ),
             "yesil": (
-                "background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 4px;"
+                "background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 10px;"
                 " font-size: 15px; padding: 0;",
                 "background: #dcfce7;",
             ),
@@ -8861,17 +8872,17 @@ class BenimPOSPlastik(QMainWindow):
             dialog = QDialog(self)
             dialog.setWindowTitle(f"📁 '{grup_adi}' İçindeki Ürünler ({len(urunler)} Adet)")
             dialog.setFixedSize(450, 550)
-            dialog.setStyleSheet("background-color: #f8fafc;")
+            dialog.setStyleSheet("background-color: #111b2a;")
             layout = QVBoxLayout(dialog)
             baslik = QLabel(f"{str(grup_adi).upper()} GRUBU ÜRÜNLERİ")
-            baslik.setStyleSheet("font-weight: bold; color: #334155; font-size: 14px;")
+            baslik.setStyleSheet("font-weight: bold; color: #d5e1f0; font-size: 14px;")
             layout.addWidget(baslik)
             liste = QListWidget()
             liste.setStyleSheet("""
                 QListWidget {
-                    background: white; border: 1px solid #cbd5e1; border-radius: 6px; padding: 5px; font-size: 13px;
+                    background: #172334; border: 1px solid #3b506a; border-radius: 10px; padding: 5px; font-size: 13px;
                 }
-                QListWidget::item { border-bottom: 1px solid #f1f5f9; padding: 8px; }
+                QListWidget::item { border-bottom: 1px solid #1b2a3e; padding: 8px; }
             """)
             for ad, fiyat in urunler:
                 liste.addItem(f"📌 {ad}   —   {float(fiyat or 0):,.2f} ₺")
@@ -8879,7 +8890,7 @@ class BenimPOSPlastik(QMainWindow):
             btn_kapat = QPushButton("Kapat")
             btn_kapat.setFixedHeight(35)
             btn_kapat.setCursor(Qt.CursorShape.PointingHandCursor)
-            btn_kapat.setStyleSheet("background-color: #64748b; color: white; font-weight: bold; border-radius: 6px;")
+            btn_kapat.setStyleSheet("background-color: #97aac1; color: white; font-weight: bold; border-radius: 10px;")
             btn_kapat.clicked.connect(dialog.close)
             layout.addWidget(btn_kapat)
             dialog.exec()
@@ -9068,7 +9079,7 @@ class BenimPOSPlastik(QMainWindow):
 
             # Satış Fiyatı (punto ve kalınlık stok/alış ile aynı)
             it_sell = QTableWidgetItem(f"{sell:,.2f} {sat_sim}")
-            it_sell.setForeground(QColor("#0284c7"))
+            it_sell.setForeground(QColor("#238ce8"))
             it_sell.setTextAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
             self.table.setItem(r_idx, 4, it_sell)
 
