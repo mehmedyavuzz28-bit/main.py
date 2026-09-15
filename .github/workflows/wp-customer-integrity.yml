@@ -1,0 +1,23 @@
+name: WP customer integrity
+on:
+  push:
+    branches: ["codex/wp-customer-integrity"]
+  pull_request:
+    paths:
+      - "main1.py"
+      - "tests/test_wp_customer_integrity.py"
+      - ".github/workflows/wp-customer-integrity.yml"
+permissions:
+  contents: read
+jobs:
+  targeted-regressions:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Compile application and test targeted contracts
+        run: |
+          python3 -m py_compile main1.py
+          python3 -m unittest discover -s tests -p 'test_wp_customer_integrity.py' -v
